@@ -39,7 +39,7 @@ class GlobalExceptionHandlerTest {
 
     ResponseEntity<ProblemResponse> response = exceptionHandler.handleDomainException(ex, request);
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+    assertThat(response.getStatusCode().value()).isEqualTo(422);
     ProblemResponse body = response.getBody();
     assertThat(body).isNotNull();
     assertThat(body.status()).isEqualTo(422);

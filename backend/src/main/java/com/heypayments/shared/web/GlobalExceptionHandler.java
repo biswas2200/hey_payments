@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
             requestId,
             ex.getFieldErrors());
 
-    return ResponseEntity.status(errorCode.getHttpStatus())
+    return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
         .body(body);
   }
@@ -100,7 +100,7 @@ public class GlobalExceptionHandler {
             requestId,
             fieldErrors);
 
-    return ResponseEntity.status(errorCode.getHttpStatus())
+    return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
         .body(body);
   }
@@ -131,7 +131,7 @@ public class GlobalExceptionHandler {
             requestId,
             List.of());
 
-    return ResponseEntity.status(errorCode.getHttpStatus())
+    return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
         .body(body);
   }
@@ -161,7 +161,7 @@ public class GlobalExceptionHandler {
             requestId,
             List.of(new FieldErrorDetail(ex.getName(), "Invalid format")));
 
-    return ResponseEntity.status(errorCode.getHttpStatus())
+    return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
         .body(body);
   }
@@ -191,7 +191,7 @@ public class GlobalExceptionHandler {
             requestId,
             List.of());
 
-    return ResponseEntity.status(errorCode.getHttpStatus())
+    return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
         .body(body);
   }
@@ -221,7 +221,7 @@ public class GlobalExceptionHandler {
             requestId,
             List.of());
 
-    return ResponseEntity.status(errorCode.getHttpStatus())
+    return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
         .body(body);
   }
@@ -251,7 +251,7 @@ public class GlobalExceptionHandler {
             requestId,
             List.of());
 
-    return ResponseEntity.status(errorCode.getHttpStatus())
+    return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
         .body(body);
   }
@@ -283,7 +283,7 @@ public class GlobalExceptionHandler {
             requestId,
             List.of());
 
-    return ResponseEntity.status(errorCode.getHttpStatus())
+    return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
         .body(body);
   }
