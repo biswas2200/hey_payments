@@ -14,7 +14,8 @@ class AuditLogTriggerTest extends BaseIntegrationTest {
   @Autowired private JdbcTemplate jdbcTemplate;
 
   @Test
-  @DisplayName("audit_log table should allow INSERT but strictly forbid UPDATE, DELETE, and TRUNCATE")
+  @DisplayName(
+      "audit_log table should allow INSERT but strictly forbid UPDATE, DELETE, and TRUNCATE")
   void shouldEnforceAppendOnlyOnAuditLog() {
     UUID id = UUID.randomUUID();
     jdbcTemplate.update(
@@ -25,13 +26,10 @@ class AuditLogTriggerTest extends BaseIntegrationTest {
         "123");
 
     assertThatThrownBy(
-            () ->
-                jdbcTemplate.update(
-                    "UPDATE audit_log SET action = 'MODIFIED' WHERE id = ?", id))
+            () -> jdbcTemplate.update("UPDATE audit_log SET action = 'MODIFIED' WHERE id = ?", id))
         .hasMessageContaining("audit_log is append-only");
 
-    assertThatThrownBy(
-            () -> jdbcTemplate.update("DELETE FROM audit_log WHERE id = ?", id))
+    assertThatThrownBy(() -> jdbcTemplate.update("DELETE FROM audit_log WHERE id = ?", id))
         .hasMessageContaining("audit_log is append-only");
 
     assertThatThrownBy(() -> jdbcTemplate.execute("TRUNCATE TABLE audit_log"))

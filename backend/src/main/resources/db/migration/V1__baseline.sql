@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION prevent_audit_log_modification()
 RETURNS TRIGGER AS $$
 BEGIN
     RAISE EXCEPTION 'audit_log is append-only: UPDATE and DELETE operations are forbidden'
-        USING ERRCODE = 'hp001';
+        USING ERRCODE = 'P0001';
 END;
 $$ LANGUAGE plpgsql;
 
@@ -28,6 +28,19 @@ CREATE TRIGGER trg_audit_log_append_only
     BEFORE UPDATE OR DELETE ON audit_log
     FOR EACH ROW
     EXECUTE FUNCTION prevent_audit_log_modification();
+
+CREATE OR REPLACE FUNCTION prevent_audit_log_truncate()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'audit_log is append-only: TRUNCATE is forbidden'
+        USING ERRCODE = 'P0001';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_audit_log_no_truncate
+    BEFORE TRUNCATE ON audit_log
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION prevent_audit_log_truncate();
 
 -- Idempotency keys fallback repository (Redis is primary, DB is persistent fallback)
 CREATE TABLE idempotency_keys (
