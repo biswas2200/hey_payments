@@ -1,0 +1,335 @@
+openapi: 3.1.0
+info:
+  title: Hey Payments API
+  version: 1.0.0
+  description: |
+    Offline-first payment gateway (simulation). Source of truth for request/response shapes.
+    The human-readable spec is docs/06-api-spec.md. Springdoc output must stay compatible with this file;
+    a contract test (Phase 1+) diffs the generated spec against it.
+servers:
+  - url: http://localhost:8080/api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: auth
+  - name: devices
+  - name: wallet
+  - name: offline
+  - name: sync
+  - name: merchant
+  - name: admin
+paths:
+  /auth/register:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/IdResponse' } } } }
+        '400': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /auth/login:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      security: []
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+  /keys/jwks:
+    get:
+      tags: [devices]
+      security: []
+      responses:
+        '200': { description: Server public keys, content: { application/json: { schema: { $ref: '#/components/schemas/Jwks' } } } }
+  /devices:
+    post:
+      tags: [devices]
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterDeviceRequest' }
+      responses:
+        '201': { description: Registered, content: { application/json: { schema: { $ref: '#/components/schemas/DeviceResponse' } } } }
+        '409': { $ref: '#/components/responses/Problem' }
+  /devices/crl:
+    get:
+      tags: [devices]
+      parameters:
+        - { name: since, in: query, required: false, schema: { type: string, format: date-time } }
+      responses:
+        '200': { description: Revocation list delta, content: { application/json: { schema: { $ref: '#/components/schemas/Crl' } } } }
+  /wallets/me:
+    get:
+      tags: [wallet]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/WalletResponse' } } } }
+  /wallets/me/fund:
+    post:
+      tags: [wallet]
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FundRequest' }
+      responses:
+        '201': { description: Funded, content: { application/json: { schema: { $ref: '#/components/schemas/WalletResponse' } } } }
+        '422': { $ref: '#/components/responses/Problem' }
+  /offline/load:
+    post:
+      tags: [offline]
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoadRequest' }
+      responses:
+        '201': { description: Loaded, content: { application/json: { schema: { $ref: '#/components/schemas/LoadResponse' } } } }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /offline/unload:
+    post:
+      tags: [offline]
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UnloadRequest' }
+      responses:
+        '200': { description: Unloaded, content: { application/json: { schema: { $ref: '#/components/schemas/UnloadResponse' } } } }
+        '409': { $ref: '#/components/responses/Problem' }
+  /sync:
+    post:
+      tags: [sync]
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SyncRequest' }
+      responses:
+        '200': { description: Per-item results, content: { application/json: { schema: { $ref: '#/components/schemas/SyncResponse' } } } }
+        '403': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+  /transactions:
+    get:
+      tags: [wallet]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TransactionPage' } } } }
+  /merchants/me/summary:
+    get:
+      tags: [merchant]
+      parameters:
+        - { name: date, in: query, schema: { type: string, format: date } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MerchantSummary' } } } }
+  /admin/devices/{id}/freeze:
+    post:
+      tags: [admin]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [reason], properties: { reason: { type: string, maxLength: 500 } } }
+      responses:
+        '204': { description: Frozen }
+        '403': { $ref: '#/components/responses/Problem' }
+  /admin/fraud-cases:
+    get:
+      tags: [admin]
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/FraudStatus' } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/FraudCase' } } } } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Problem:
+      description: RFC 9457 problem details
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Paise: { type: integer, format: int64, minimum: 0, description: Amount in paise (1 INR = 100) }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        instance: { type: string }
+        requestId: { type: string }
+        errors: { type: array, items: { type: object, properties: { field: { type: string }, message: { type: string } } } }
+    IdResponse: { type: object, properties: { id: { type: string, format: uuid } } }
+    Role: { type: string, enum: [PAYER, MERCHANT, ADMIN] }
+    RegisterRequest:
+      type: object
+      required: [phone, password, role]
+      properties:
+        phone: { type: string, pattern: '^\+91[6-9][0-9]{9}$' }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 10, maxLength: 128 }
+        role: { type: string, enum: [PAYER, MERCHANT] }
+        displayName: { type: string, maxLength: 60 }
+    LoginRequest:
+      type: object
+      required: [phone, password]
+      properties: { phone: { type: string }, password: { type: string } }
+    TokenResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        expiresIn: { type: integer }
+        user: { type: object, properties: { id: { type: string }, role: { $ref: '#/components/schemas/Role' }, displayName: { type: string } } }
+    Jwk:
+      type: object
+      properties: { kid: { type: string }, kty: { type: string, const: EC }, crv: { type: string, const: P-256 }, x: { type: string }, y: { type: string }, status: { type: string, enum: [ACTIVE, RETIRING] } }
+    Jwks: { type: object, properties: { keys: { type: array, items: { $ref: '#/components/schemas/Jwk' } } } }
+    RegisterDeviceRequest:
+      type: object
+      required: [publicKeyJwk]
+      properties:
+        publicKeyJwk: { $ref: '#/components/schemas/Jwk' }
+        label: { type: string, maxLength: 60 }
+        userAgent: { type: string, maxLength: 300 }
+    DeviceResponse:
+      type: object
+      properties:
+        deviceId: { type: string, format: uuid }
+        status: { type: string, enum: [ACTIVE, FROZEN, REVOKED, CLOSED] }
+        lastCounter: { type: integer, format: int64 }
+        merchantCertificate: { $ref: '#/components/schemas/SignedEnvelope' }
+    Crl:
+      type: object
+      properties:
+        generatedAt: { type: string, format: date-time }
+        revoked: { type: array, items: { type: object, properties: { deviceId: { type: string }, status: { type: string }, at: { type: string, format: date-time } } } }
+    SignedEnvelope:
+      type: object
+      required: [p, s]
+      properties:
+        p: { type: object, additionalProperties: true, description: Payload, signed as RFC 8785 JCS bytes }
+        s: { type: string, description: base64url IEEE-P1363 ECDSA P-256 signature }
+    WalletResponse:
+      type: object
+      properties:
+        mainBalance: { $ref: '#/components/schemas/Paise' }
+        offlineEscrow: { $ref: '#/components/schemas/Paise' }
+        activeBc: { $ref: '#/components/schemas/SignedEnvelope' }
+    FundRequest:
+      type: object
+      required: [amount]
+      properties: { amount: { $ref: '#/components/schemas/Paise' }, source: { type: string, const: SIM_BANK } }
+    LoadRequest:
+      type: object
+      required: [deviceId, amount, lastCounter]
+      properties: { deviceId: { type: string, format: uuid }, amount: { $ref: '#/components/schemas/Paise' }, lastCounter: { type: integer, format: int64 } }
+    LoadResponse:
+      type: object
+      properties: { balanceCertificate: { $ref: '#/components/schemas/SignedEnvelope' }, offlineLimit: { $ref: '#/components/schemas/Paise' } }
+    UnloadRequest:
+      type: object
+      required: [deviceId, lastCounter]
+      properties: { deviceId: { type: string, format: uuid }, lastCounter: { type: integer, format: int64 } }
+    UnloadResponse:
+      type: object
+      properties: { returnedAmount: { $ref: '#/components/schemas/Paise' }, mainBalance: { $ref: '#/components/schemas/Paise' } }
+    SyncItem:
+      type: object
+      required: [type, envelope]
+      properties:
+        type: { type: string, enum: [VC, RC] }
+        envelope: { oneOf: [ { type: string, description: 'HP1:… base45' }, { $ref: '#/components/schemas/SignedEnvelope' } ] }
+        voidRequested: { type: boolean, default: false }
+    SyncRequest:
+      type: object
+      required: [deviceId, items]
+      properties:
+        deviceId: { type: string, format: uuid }
+        items: { type: array, maxItems: 100, items: { $ref: '#/components/schemas/SyncItem' } }
+        crlSince: { type: string, format: date-time }
+    SyncResult:
+      type: object
+      properties:
+        voucherId: { type: string, format: uuid }
+        status: { type: string, enum: [SETTLED, HELD, REVERSED, REJECTED, DUPLICATE] }
+        code: { type: string }
+        settledAt: { type: string, format: date-time }
+    SyncResponse:
+      type: object
+      properties:
+        results: { type: array, items: { $ref: '#/components/schemas/SyncResult' } }
+        crlDelta: { $ref: '#/components/schemas/Crl' }
+        serverTime: { type: string, format: date-time }
+        nextSyncAfter: { type: string, format: date-time }
+    Transaction:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [FUND, LOAD, UNLOAD, OFFLINE_PAYMENT, SETTLEMENT, REVERSAL, PAYOUT] }
+        amount: { $ref: '#/components/schemas/Paise' }
+        status: { type: string }
+        counterparty: { type: string }
+        timeline: { type: array, items: { type: object, properties: { status: { type: string }, at: { type: string, format: date-time } } } }
+    TransactionPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Transaction' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer }
+    MerchantSummary:
+      type: object
+      properties:
+        acceptedOffline: { $ref: '#/components/schemas/Paise' }
+        pendingSync: { $ref: '#/components/schemas/Paise' }
+        settled: { $ref: '#/components/schemas/Paise' }
+        fees: { $ref: '#/components/schemas/Paise' }
+        net: { $ref: '#/components/schemas/Paise' }
+    FraudStatus: { type: string, enum: [OPEN, INVESTIGATING, RESOLVED_FRAUD, RESOLVED_OK] }
+    FraudCase:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        rule: { type: string }
+        severity: { type: string, enum: [LOW, MEDIUM, HIGH] }
+        status: { $ref: '#/components/schemas/FraudStatus' }
+        deviceId: { type: string }
+        voucherId: { type: string }
+        evidence: { type: object, additionalProperties: true }
+        openedAt: { type: string, format: date-time }

@@ -1,0 +1,59 @@
+<main class="container">
+  <header class="header">
+    <div class="logo-badge">HP</div>
+    <h1>Hey Payments</h1>
+    <p class="subtitle">Fullstack Spring Boot + Angular Architecture</p>
+  </header>
+
+  <section class="card-grid">
+    <div class="card status-card">
+      <div class="card-header">
+        <h2>Backend Status</h2>
+        <button class="btn-refresh" (click)="checkBackendHealth()" [disabled]="loading()">
+          {{ loading() ? 'Checking...' : 'Refresh Status' }}
+        </button>
+      </div>
+
+      <div *ngIf="backendStatus()" class="status-box online">
+        <div class="status-indicator online-dot"></div>
+        <div>
+          <h3>Online & Connected</h3>
+          <p><strong>Service:</strong> {{ backendStatus()?.service }}</p>
+          <p><strong>Status:</strong> {{ backendStatus()?.status }}</p>
+          <p class="time"><strong>Last ping:</strong> {{ backendStatus()?.timestamp }}</p>
+        </div>
+      </div>
+
+      <div *ngIf="error()" class="status-box offline">
+        <div class="status-indicator offline-dot"></div>
+        <div>
+          <h3>Disconnected</h3>
+          <p>{{ error() }}</p>
+          <p class="hint">Run <code>./mvnw spring-boot:run</code> inside <code>backend/</code></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card info-card">
+      <h2>Project Scaffold Structure</h2>
+      <ul class="scaffold-list">
+        <li>
+          <span class="badge backend">Backend</span>
+          <div>
+            <strong>Spring Boot 4.x / Java 21</strong>
+            <p>Maven wrapper (<code>mvnw</code>), Actuator, Web MVC, Validation, CORS configured.</p>
+          </div>
+        </li>
+        <li>
+          <span class="badge frontend">Frontend</span>
+          <div>
+            <strong>Angular 22 (Standalone)</strong>
+            <p>SCSS, Router, modern signals, HttpClient with Fetch, proxy configuration to port 8080.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <router-outlet></router-outlet>
+</main>
