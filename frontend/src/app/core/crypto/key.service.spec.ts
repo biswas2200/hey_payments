@@ -1,4 +1,3 @@
-import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { KeyService } from './key.service';
 import { db } from '../offline/db';
