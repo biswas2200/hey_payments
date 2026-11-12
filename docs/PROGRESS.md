@@ -4,8 +4,8 @@ Maintained by the coding agent. Append one section per phase using the template 
 
 | Phase | Name | Status | Review |
 |---|---|---|---|
-| 0 | Foundation | READY FOR REVIEW | docs/reviews/AGENT-REVIEW-phase-0.md |
-| 1 | Auth, users, devices | NOT STARTED | — |
+| 0 | Foundation | APPROVED | docs/reviews/REVIEW-phase-0.md |
+| 1 | Auth, users, devices | IN PROGRESS | — |
 | 2 | Ledger, wallet, funding | NOT STARTED | — |
 | 3 | Offline balance | NOT STARTED | — |
 | 4 | Design system & shell | NOT STARTED | — |
@@ -16,8 +16,8 @@ Maintained by the coding agent. Append one section per phase using the template 
 
 ---
 
-## Phase 0: Foundation: READY FOR REVIEW (2026-11-12)
-**Branch:** phase/0-foundation   **Commits:** 64   **Tag:** (after approval)
+## Phase 0: Foundation: APPROVED (2026-11-13)
+**Branch:** phase/0-foundation   **Commits:** 68   **Tag:** v0.1.0
 
 ### Built
 - Task 0.1: Git repository initialized with branch discipline, strict `.gitignore`, pre-commit hooks, and architecture documentation.
@@ -70,6 +70,11 @@ Maintained by the coding agent. Append one section per phase using the template 
      - Rendered both `logo-wordmark-light.svg` and `logo-wordmark-dark.svg` in `app.html`.
      - Added CSS rules toggling visibility under `@media (prefers-color-scheme: dark)` and `:root[data-theme='dark']` without recolouring SVGs.
      - Extended E2E suite to assert light wordmark visible in light mode, dark wordmark visible and light hidden in dark mode and under `data-theme="dark"`.
+  9. [Condition C (Re-review Approval)] Prod profile Redis password compose wiring:
+     - Wired `SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}` in `docker-compose.yml` backend service environment.
+     - Created `ProductionProfileConfigTest` asserting that prod profile fails without `SPRING_DATA_REDIS_PASSWORD` and resolves cleanly when supplied.
+     - Added CI step and `scripts/test-port-exposure.sh` check verifying that `SPRING_PROFILE=prod docker compose --env-file .env.example config` succeeds with valid password binding.
+  10. [Brand Wordmarks Outlined Paths] Copied architect-provided outlined-path SVGs (`logo-wordmark-light.svg`, `logo-wordmark-dark.svg`) into `frontend/public/brand/`, ensuring crisp offline vector rendering inside `<img>` tags on any device.
 
 ### SHOULD-FIX dispositions
 - Proxy `/actuator/`: Removed from public Nginx configuration.
@@ -86,7 +91,7 @@ Maintained by the coding agent. Append one section per phase using the template 
 
 ### Known issues / next
 - Signed journal line type to be introduced in Phase 2 for ledger transactions (preserving non-negative `Money` for amounts).
-- Next: Stop for architect re-review before beginning Phase 1 (Auth, users, devices).
+- Next: Phase 1 (Auth, users, devices) on branch `phase/1-auth-devices`.
 
 ### How to demo
 1. `make up`
