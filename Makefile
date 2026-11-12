@@ -18,12 +18,14 @@ help:
 	@echo "  make reset-db - Drop and recreate DB volume"
 
 up:
+	@[ -f .env ] || cp .env.example .env
 	docker compose up -d --build
 
 down:
 	docker compose down
 
 dev:
+	@[ -f .env ] || cp .env.example .env
 	docker compose up -d postgres redis mailpit
 
 test: test-be test-fe
