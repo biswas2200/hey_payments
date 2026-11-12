@@ -3,6 +3,7 @@ package com.heypayments.shared.domain.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -138,5 +139,30 @@ class MoneyTest {
     assertThatThrownBy(() -> m.isGreaterThanOrEqual(null)).isInstanceOf(NullPointerException.class);
     assertThatThrownBy(() -> m.isLessThan(null)).isInstanceOf(NullPointerException.class);
     assertThatThrownBy(() -> m.compareTo(null)).isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  @DisplayName("should reject amounts exceeding maximum safe integer (2^53 - 1)")
+  void shouldRejectAmountsExceedingMaxSafeInteger() {
+    long maxSafeInteger = 9_007_199_254_740_991L;
+    Money safe = Money.ofPaise(maxSafeInteger);
+    assertThat(safe.paise()).isEqualTo(maxSafeInteger);
+
+    assertThatThrownBy(() -> Money.ofPaise(maxSafeInteger + 1))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("exceeds safe integer bound");
+  }
+
+  @Test
+  @DisplayName("should serialize to JSON number and deserialize from JSON number via Jackson")
+  void shouldSerializeAndDeserializeJson() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    Money money = Money.ofPaise(1250L);
+
+    String json = mapper.writeValueAsString(money);
+    assertThat(json).isEqualTo("1250");
+
+    Money deserialized = mapper.readValue("1250", Money.class);
+    assertThat(deserialized).isEqualTo(money);
   }
 }
