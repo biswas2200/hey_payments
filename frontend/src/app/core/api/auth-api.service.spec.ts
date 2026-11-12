@@ -128,12 +128,12 @@ describe('AuthApiService', () => {
     op.flush(mockProfile);
   });
 
-  it('should send PUT request for setPin', () => {
-    const req: SetPinRequest = { pin: '123456' };
+  it('should send PUT request to /api/v1/auth/pin with pin and password', () => {
+    const req: SetPinRequest = { pin: '123456', password: 'Password123!' };
 
     service.setPin(req).subscribe();
 
-    const op = httpTesting.expectOne('/api/v1/users/me/pin');
+    const op = httpTesting.expectOne('/api/v1/auth/pin');
     expect(op.request.method).toBe('PUT');
     expect(op.request.body).toEqual(req);
     op.flush(null);

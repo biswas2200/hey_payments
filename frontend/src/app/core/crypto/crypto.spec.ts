@@ -11,6 +11,7 @@ import {
   signEnvelope,
   verifyEnvelope,
   sha256Hex,
+  derivePinHash,
 } from './crypto';
 
 interface JcsVector {
@@ -190,6 +191,17 @@ describe('Frontend Crypto & Shared Test Vectors', () => {
     it('should compute SHA-256 hex correctly', async () => {
       const hash = await sha256Hex('hello');
       expect(hash).toBe('2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824');
+    });
+
+    it('should derive deterministic 256-bit PBKDF2 hash for offline PIN gating', async () => {
+      const salt = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+      const hash1 = await derivePinHash('123456', salt);
+      const hash2 = await derivePinHash('123456', salt);
+      const differentHash = await derivePinHash('654321', salt);
+
+      expect(hash1).toBe(hash2);
+      expect(hash1).toMatch(/^[0-9a-f]{64}$/);
+      expect(hash1).not.toBe(differentHash);
     });
   });
 });

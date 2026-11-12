@@ -64,22 +64,34 @@ describe('SetPinComponent', () => {
     expect(component.formError()).toBe('PINs do not match');
   });
 
-  it('should submit valid PIN and navigate to /pay for payer', async () => {
+  it('should validate password is required', async () => {
     component.pin.set('123456');
     component.confirmPin.set('123456');
+    component.password.set('');
 
     await component.onSubmit();
-    expect(authStoreMock.setPin).toHaveBeenCalledWith('123456');
+    expect(authStoreMock.setPin).not.toHaveBeenCalled();
+    expect(component.formError()).toBe('Current password is required to verify PIN setup');
+  });
+
+  it('should submit valid PIN and password and navigate to /pay for payer', async () => {
+    component.pin.set('123456');
+    component.confirmPin.set('123456');
+    component.password.set('Password123!');
+
+    await component.onSubmit();
+    expect(authStoreMock.setPin).toHaveBeenCalledWith('123456', 'Password123!');
     expect(routerMock.navigate).toHaveBeenCalledWith(['/pay']);
   });
 
-  it('should submit valid PIN and navigate to /merchant for merchant', async () => {
+  it('should submit valid PIN and password and navigate to /merchant for merchant', async () => {
     authStoreMock.isMerchant.set(true);
     component.pin.set('654321');
     component.confirmPin.set('654321');
+    component.password.set('Password123!');
 
     await component.onSubmit();
-    expect(authStoreMock.setPin).toHaveBeenCalledWith('654321');
+    expect(authStoreMock.setPin).toHaveBeenCalledWith('654321', 'Password123!');
     expect(routerMock.navigate).toHaveBeenCalledWith(['/merchant']);
   });
 
@@ -87,6 +99,7 @@ describe('SetPinComponent', () => {
     authStoreMock.setPin.mockRejectedValue(new Error('Weak PIN'));
     component.pin.set('123456');
     component.confirmPin.set('123456');
+    component.password.set('Password123!');
 
     await component.onSubmit();
     expect(routerMock.navigate).not.toHaveBeenCalled();
