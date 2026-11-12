@@ -17,7 +17,7 @@ Maintained by the coding agent. Append one section per phase using the template 
 ---
 
 ## Phase 0: Foundation: READY FOR REVIEW (2026-11-12)
-**Branch:** phase/0-foundation   **Commits:** 58   **Tag:** (after approval)
+**Branch:** phase/0-foundation   **Commits:** 64   **Tag:** (after approval)
 
 ### Built
 - Task 0.1: Git repository initialized with branch discipline, strict `.gitignore`, pre-commit hooks, and architecture documentation.
@@ -25,38 +25,51 @@ Maintained by the coding agent. Append one section per phase using the template 
 - Task 0.3: Shared domain kernel (`com.heypayments.shared` with `Money` value object supporting safe integer bound and Jackson mapping, `UuidV7Generator`, `ErrorCode`, `DomainException`, `FieldErrorDetail`).
 - Task 0.4: Web & observability foundation (`RequestIdFilter` with strict alphanumeric sanitization, `GlobalExceptionHandler` mapping domain and Spring MVC client exceptions to RFC 9457 `ProblemResponse`, `ProblemAuthenticationEntryPoint` writing 401 `UNAUTHENTICATED`, `ProblemAccessDeniedHandler` writing 403 `FORBIDDEN`, `TimeConfig` UTC clock, `SecurityConfig` with method security and dev-profile Swagger/OpenAPI exposure, Spring Boot native structured ECS JSON logging).
 - Task 0.5: Database migration baseline (`V1__baseline.sql` with `spring-boot-starter-flyway`, `audit_log` append-only trigger and statement-level `TRUNCATE` prevention trigger, `idempotency_keys`, `event_publication`), Testcontainers base integration test, and Spring Modulith verification.
-- Task 0.6: Angular 22 PWA scaffold (`frontend/` with strict TypeScript, standalone components, Angular signals, `@angular/pwa` service worker, ESLint with a11y, Prettier, `tokens.scss` with Calm Ledger v1 tokens, `@media (prefers-color-scheme: dark)`, self-hosted fonts with `@fontsource`, brand SVG assets, `ConnectivityService`, accessible app shell with live status banner using `@lucide/angular`).
+- Task 0.6: Angular 22 PWA scaffold (`frontend/` with strict TypeScript, standalone components, Angular signals, `@angular/pwa` service worker, ESLint with a11y, Prettier, `tokens.scss` with Calm Ledger v1 tokens, `@media (prefers-color-scheme: dark)`, self-hosted fonts with `@fontsource`, brand SVG assets with light and dark wordmark variants, `ConnectivityService`, accessible app shell with live status banner using `@lucide/angular`).
 - Task 0.7: Dockerization (`backend/Dockerfile` multi-stage with non-root user `app`, `frontend/Dockerfile` multi-stage with `nginxinc/nginx-unprivileged:1.27-alpine` non-root user `nginx`, `docker-compose.yml` with port isolation binding internal services strictly to `127.0.0.1`, Redis password authentication, and only `frontend` published on `0.0.0.0:8081`).
-- Task 0.8: Reverse proxy & CI (`frontend/nginx.conf` with dynamic CSP nonce injection on `index.html` via `sub_filter '__CSP_NONCE__' '$request_id'`, strict explicit CSP policy, caching rules, `.github/workflows/ci.yml` validating backend Spotless & Checkstyle, frontend ESLint & Prettier, backend Testcontainers tests, frontend Vitest tests, port isolation check, and Playwright E2E smoke tests).
-- Task 0.9: Developer experience (`Makefile` targets `up`, `down`, `dev`, `test`, `lint`, `fmt`, `e2e`, `scan`, `vectors`, `certs`, `psql`, `reset-db`, `README.md`).
+- Task 0.8: Reverse proxy & CI (`frontend/nginx.conf` with dynamic CSP nonce injection on `index.html` via `sub_filter '__CSP_NONCE__' '$request_id'`, strict explicit CSP policy, caching rules, `.github/workflows/ci.yml` validating backend Spotless & Checkstyle, frontend ESLint & Prettier, backend Testcontainers tests with `-Dsurefire.runOrder=random`, frontend Vitest tests, port isolation check, and Playwright E2E smoke tests).
+- Task 0.9: Developer experience (`Makefile` targets `up`, `down`, `dev`, `test`, `test-be` with random surefire order, `test-fe`, `lint`, `fmt`, `e2e`, `scan`, `vectors`, `certs`, `psql`, `reset-db`, `README.md`).
 
 ### Tests
 - Backend: 50 tests, line 82% / branch 72% across bundle (`jacoco:check` passed with 80% line / 70% branch gates).
+- Backend Randomized Run Order: Enforced via `maven-surefire-plugin` (`<runOrder>random</runOrder>`), `Makefile`, and CI.
+  - Consecutive Run 1 (`-Dsurefire.runOrder.random.seed=147574706629912`): 50/50 passed, build success.
+  - Consecutive Run 2 (`-Dsurefire.runOrder.random.seed=147613526936333`): 50/50 passed, build success.
 - Frontend: 12 tests, line 79.34% / branch 81.57% (`vitest.config.mts` passed with 75% line / 65% branch gates).
-- E2E: 2 Playwright smoke tests passed:
-  1. `Hey Payments PWA Smoke Test › should render styled PWA with zero console errors, Calm Ledger theme, status banner, and active service worker`: PASS (0 console errors, `body` background `rgb(247, 245, 240)`, status banner visible, service worker registered).
-  2. `Hey Payments PWA Smoke Test › should support dark color scheme with dark background`: PASS (`body` background `rgb(11, 20, 32)`).
+- E2E: 3 Playwright smoke tests passed:
+  1. `Hey Payments PWA Smoke Test › should render styled PWA with zero console errors, Calm Ledger theme, status banner, light logo, and active service worker`: PASS (0 console errors, `body` background `rgb(247, 245, 240)`, status banner visible, light logo visible, dark logo hidden, service worker registered).
+  2. `Hey Payments PWA Smoke Test › should support dark color scheme with dark background and visible dark wordmark`: PASS (0 console errors, `body` background `rgb(11, 20, 32)`, status banner visible, dark logo visible, light logo hidden).
+  3. `Hey Payments PWA Smoke Test › should toggle dark wordmark when data-theme="dark" attribute is present`: PASS (dark logo visible, light logo hidden).
 
 ### Screenshots
 - Light Mode: `docs/design/screenshots/phase-0-shell-light.png`
 - Dark Mode: `docs/design/screenshots/phase-0-shell-dark.png`
+- Playwright E2E test suite writes screenshots to ephemeral `test-results/screenshots/` (does not dirty `docs/` on CI/dev runs).
 
 ### Gate results
 - `make fmt && make lint` ✅ (0 Checkstyle violations, 0 ESLint violations, Prettier clean)
-- `make test` ✅ (50 backend tests + 12 frontend tests; all coverage gates met)
+- `make test` ✅ (50 backend tests with random order + 12 frontend tests; all coverage gates met)
 - `make scan` ✅ (`scripts/test-port-exposure.sh`: Only frontend on 0.0.0.0; internal services strictly on 127.0.0.1)
-- `make e2e` ✅ (2/2 Playwright smoke tests green)
+- `make e2e` ✅ (3/3 Playwright smoke tests green)
 - `make up` ✅ (5/5 containers healthy)
 
 ### Bug-hunt agent & Architect review
 - Bug-hunt report: `docs/reviews/AGENT-REVIEW-phase-0.md`: H:3 M:7 L:4 → all 14 fixed with regression tests.
-- Architect review: `docs/reviews/REVIEW-phase-0.md` → all 6 MUST-FIX items implemented with TDD and verified:
-  1. [MUST-FIX 1] CSP Angular styles unblocked via `inlineCritical: false`, per-request CSP nonce, and `sub_filter`. Verified by Playwright test asserting 0 console errors and paper background.
+- Architect review: `docs/reviews/REVIEW-phase-0.md` → all MUST-FIX and SHOULD-FIX items verified:
+  1. [MUST-FIX 1] CSP Angular styles unblocked via `inlineCritical: false`, per-request CSP nonce, and `sub_filter`.
   2. [MUST-FIX 2] HTTP Basic auth dropped, `UserDetailsServiceAutoConfiguration` excluded, RFC 9457 `ProblemAuthenticationEntryPoint` and `ProblemAccessDeniedHandler` implemented and tested.
   3. [MUST-FIX 3] Port exposure eliminated: postgres, redis, mailpit, backend bound to `127.0.0.1`; redis password enforced via `--requirepass`.
   4. [MUST-FIX 4] Calm Ledger v1 tokens adopted verbatim with `@media (prefers-color-scheme: dark)`, fonts self-hosted via `@fontsource`, brand SVG assets installed.
   5. [MUST-FIX 5] Shell UI uses approved status language ("Online · synced"), `@lucide/angular` icons, backend demo card guarded with `isDev()`, 0 developer URLs in user UI.
   6. [MUST-FIX 6] Frontend container runs non-root `nginxinc/nginx-unprivileged:1.27-alpine` on port 8080.
+  7. [MUST-FIX A (Re-review)] Order-dependent tests eliminated:
+     - Singleton PostgreSQL Testcontainer initialized in `BaseIntegrationTest` via static initialization block, preventing container teardown between classes while preserving Spring context caching.
+     - Thread-local MDC cleanup added with `@BeforeEach` and `@AfterEach` in `GlobalExceptionHandlerTest`, `ProblemSecurityHandlersTest`, and `RequestIdFilterTest`.
+     - Surefire configured with `<runOrder>random</runOrder>` in `pom.xml`, `Makefile`, and CI. Verified with two consecutive green runs.
+  8. [MUST-FIX B (Re-review)] Brand wordmark dark mode visibility fixed:
+     - Rendered both `logo-wordmark-light.svg` and `logo-wordmark-dark.svg` in `app.html`.
+     - Added CSS rules toggling visibility under `@media (prefers-color-scheme: dark)` and `:root[data-theme='dark']` without recolouring SVGs.
+     - Extended E2E suite to assert light wordmark visible in light mode, dark wordmark visible and light hidden in dark mode and under `data-theme="dark"`.
 
 ### SHOULD-FIX dispositions
 - Proxy `/actuator/`: Removed from public Nginx configuration.
@@ -65,6 +78,8 @@ Maintained by the coding agent. Append one section per phase using the template 
 - `audit_log`: Statement-level trigger `trg_audit_log_no_truncate` blocks `TRUNCATE` operations; tested in `AuditLogTriggerTest`.
 - `ConnectivityService`: Added code comment clarifying that `'degraded'` status will be triggered by background sync backoff in Phase 6.
 - Dossier and Agent Review reports: Corrected all discrepancies and tidied conclusion sections.
+- Playwright screenshots: Configured to output into `test-results/` so test runs do not dirty the repo.
+- Production Redis password: `application-prod.yml` requires `${SPRING_DATA_REDIS_PASSWORD}` with no default.
 
 ### Deviations from spec / proposals
 - none
@@ -75,5 +90,5 @@ Maintained by the coding agent. Append one section per phase using the template 
 
 ### How to demo
 1. `make up`
-2. Open http://localhost:8081 in browser to view the PWA shell with live connectivity status banner and Calm Ledger v1 design tokens.
+2. Open http://localhost:8081 in browser to view the PWA shell with live connectivity status banner, Calm Ledger v1 design tokens, and light/dark theme wordmark switching.
 3. Run `make e2e` to execute Playwright smoke tests and verify zero console errors.
