@@ -14,9 +14,13 @@
   --hp-color-accent: #f5a524;
   --hp-color-on-accent: #0e1b2c;
   --hp-color-status-offline: #4338ca;
+  --hp-color-status-offline-bg: #ede9fe;
   --hp-color-status-pending: #b45309;
+  --hp-color-status-pending-bg: #fef3c7;
   --hp-color-status-settled: #15803d;
+  --hp-color-status-settled-bg: #dcfce7;
   --hp-color-status-failed: #b91c1c;
+  --hp-color-status-failed-bg: #fee2e2;
   --hp-color-focus: #2563eb;
 
   /* Typography */
@@ -93,9 +97,13 @@
   --hp-color-accent: #f5a524;
   --hp-color-on-accent: #0e1b2c;
   --hp-color-status-offline: #a5b4fc;
+  --hp-color-status-offline-bg: #1e1b4b;
   --hp-color-status-pending: #fbbf24;
+  --hp-color-status-pending-bg: #451a03;
   --hp-color-status-settled: #4ade80;
+  --hp-color-status-settled-bg: #052e16;
   --hp-color-status-failed: #f87171;
+  --hp-color-status-failed-bg: #450a0a;
   --hp-color-focus: #93c5fd;
 }
 
@@ -106,5 +114,14 @@
     --hp-motion-duration-base: 0ms;
     --hp-motion-duration-slow: 0ms;
     --hp-motion-duration-success: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

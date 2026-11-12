@@ -1,6 +1,9 @@
 {
-  "name": "frontend",
-  "short_name": "frontend",
+  "name": "Hey Payments",
+  "short_name": "Hey Payments",
+  "description": "Offline-first payment gateway PWA",
+  "theme_color": "#0f766e",
+  "background_color": "#f7f5f0",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
