@@ -1,6 +1,8 @@
 package com.heypayments.auth.infra.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.heypayments.shared.domain.exception.ErrorCode;
 import com.heypayments.shared.web.ProblemResponse;
 import io.github.bucket4j.Bandwidth;
@@ -13,8 +15,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,8 +25,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-  private final Map<String, Bucket> loginBuckets = new ConcurrentHashMap<>();
-  private final Map<String, Bucket> generalBuckets = new ConcurrentHashMap<>();
+  private final Cache<String, Bucket> loginBuckets =
+      Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(15)).maximumSize(10_000).build();
+  private final Cache<String, Bucket> generalBuckets =
+      Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(15)).maximumSize(10_000).build();
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
@@ -40,15 +42,14 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     boolean allowed = true;
     if (path.contains("/auth/login") || path.contains("/auth/verify-otp")) {
       // 5 requests per minute per IP/phone
-      Bucket bucket =
-          loginBuckets.computeIfAbsent(clientIp, k -> createBucket(5, Duration.ofMinutes(1)));
+      Bucket bucket = loginBuckets.get(clientIp, k -> createBucket(5, Duration.ofMinutes(1)));
       allowed = bucket.tryConsume(1);
     } else if (!path.startsWith("/actuator")
         && !path.startsWith("/swagger")
         && !path.startsWith("/v3/api-docs")) {
       // 120 requests per minute general
       Bucket bucket =
-          generalBuckets.computeIfAbsent(clientIp, k -> createBucket(120, Duration.ofMinutes(1)));
+          generalBuckets.get(clientIp, k -> createBucket(120, Duration.ofMinutes(1)));
       allowed = bucket.tryConsume(1);
     }
 
@@ -80,15 +81,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
   }
 
   private String resolveClientIp(HttpServletRequest request) {
-    String xForwardedFor = request.getHeader("X-Forwarded-For");
-    if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-      return xForwardedFor.split(",")[0].trim();
-    }
+    // Rely strictly on remoteAddr to prevent rate limit bypass via forged X-Forwarded-For headers
     return request.getRemoteAddr();
   }
 
   public void reset() {
-    loginBuckets.clear();
-    generalBuckets.clear();
+    loginBuckets.invalidateAll();
+    generalBuckets.invalidateAll();
   }
 }
