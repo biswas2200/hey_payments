@@ -262,11 +262,6 @@
 
 ---
 
-## Conclusion & Next Steps for Builder Agent
+## Conclusion
 
-All 14 findings (3 HIGH, 7 MEDIUM, 4 LOW) identified during the second-agent bug hunt have been remediated with regression tests and verified against the Docker stack. Phase 0 is complete and fully satisfies the Phase Gate criteria and Global Definition of Done.
-
-
-1. Fix all **HIGH** findings (H-1, H-2, H-3) and **MEDIUM** findings (M-1 through M-7), writing reproduction tests first per AGENTS.md §3 & §7.
-2. Mark each finding in this report as resolved (with commit references).
-3. Update `docs/PROGRESS.md` with the Phase 0 report template.
+All 14 findings (3 HIGH, 7 MEDIUM, 4 LOW) identified during the second-agent bug hunt have been remediated with regression tests and verified against the Docker stack. All MUST-FIX and SHOULD-FIX remediation items from the architect review have also been implemented and verified.

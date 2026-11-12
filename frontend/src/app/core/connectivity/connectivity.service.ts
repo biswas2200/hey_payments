@@ -1,5 +1,6 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 
+// Note: 'degraded' status will be triggered by background sync backoff in Phase 6.
 export type ConnectivityStatus = 'online' | 'offline' | 'degraded';
 
 @Injectable({
