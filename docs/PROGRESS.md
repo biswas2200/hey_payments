@@ -97,3 +97,81 @@ Maintained by the coding agent. Append one section per phase using the template 
 1. `make up`
 2. Open http://localhost:8081 in browser to view the PWA shell with live connectivity status banner, Calm Ledger v1 design tokens, and light/dark theme wordmark switching.
 3. Run `make e2e` to execute Playwright smoke tests and verify zero console errors.
+
+---
+
+## Phase 1: Authentication, Registration, and Device Enrollment: READY FOR REVIEW (2026-11-13)
+**Branch:** phase/1-auth-devices   **Commits:** 50   **Tag:** (after approval)
+
+### Built
+- **Crypto & Signatures (Task 1.1):**
+  - Java: `CryptoService` implementing ECDSA P-256 with IEEE P1363 (64-byte `r||s`) signatures (`SHA256withECDSAinP1363Format`), RFC 8785 JSON Canonicalization Scheme (`JcsCanonicalizer`), Argon2id password hashing, and AES-256-GCM symmetric master encryption.
+  - TypeScript: Pure TS `crypto.ts`, `jcs.ts`, and `key.service.ts` using WebCrypto ECDSA P-256 with P1363 signatures, non-BMP UTF-16 code unit ordering, IndexedDB structured cloning of non-extractable CryptoKeyPair (`extractable: false`), and PBKDF2 offline PIN hashing (600,000 iterations).
+  - Test vectors: Verified against shared vectors in `test-vectors/p256/` and `test-vectors/argon2/`.
+- **Server Key Discovery & JWKS (Task 1.3):**
+  - Database-backed server signing key generation (`V2__auth.sql`, `server_signing_keys` table), daily rotation, and active/retired status lifecycle (`ServerKeyService`).
+  - Public JWKS endpoint `GET /api/v1/keys/jwks` (`JwksController`).
+- **User Authentication & Session Management (Task 1.2 & 1.4):**
+  - User registration (`POST /api/v1/auth/register`) for PAYER and MERCHANT roles with initial LOCKED status (`V2__auth.sql`, `users` table).
+  - 6-digit OTP dispatch via Mailpit (`OtpService`) with bounded Caffeine cache and 5-attempt brute-force protection; account activation (`POST /api/v1/auth/verify-otp`).
+  - Login (`POST /api/v1/auth/login`) with Argon2id password verification, issuing 15-minute access JWT and 14-day rotating refresh token cookie with SameSite=Strict and context-aware Secure flag.
+  - Refresh rotation (`POST /api/v1/auth/refresh`) with atomic token family invalidation upon reuse detection (`RefreshTokenService`).
+  - Payment PIN configuration (`PUT /api/v1/auth/pin`) for payers with password validation and client-side salted PBKDF2 hash persistence.
+  - Authenticated user profile retrieval (`GET /api/v1/users/me`).
+  - Rate limiting with Bucket4j + Caffeine cache: 5 req/min on login/OTP, 120 req/min general, resolving client IP via `request.getRemoteAddr()`.
+- **Device Registration & Merchant Certificates (Task 1.5):**
+  - Device enrollment (`POST /api/v1/devices`) verifying 32-byte coordinates and curve equation validity on P-256; partial unique index enforcing max 1 ACTIVE device per user per kind (`devices` table).
+  - Merchant Certificate (MC) issuance for merchant devices, signed by active server private key.
+  - Active device retrieval (`GET /api/v1/devices/me`), device retirement (`DELETE /api/v1/devices/{id}`), and certificate revocation list delta querying (`GET /api/v1/devices/crl`).
+- **Frontend Auth & Device Workflows (Task 1.6):**
+  - Angular 22 standalone signals-based UI adhering to Calm Ledger v1 and WCAG 2.2 AA: Register (`/auth/register`), Verify OTP (`/auth/verify-otp`), Login (`/auth/login`), Device Enrollment (`/auth/device-register`), Set PIN (`/auth/set-pin`).
+  - `AuthStore` managing JWT lifecycle, device key enrollment, MC storage in Dexie `db.certs`, and seamless session recovery on login.
+  - `authInterceptor` injecting Bearer token, deduplicating concurrent 401 refresh requests via RxJS `shareReplay(1)` mutex.
+  - Route guards (`authGuard`, `unauthGuard`) protecting payer and merchant views.
+
+### Tests
+- Backend: 106 tests, line 92.01% / branch 76.74% (crypto 85.29%, device 98.98%, auth 93.09%, Modulith & ArchUnit 100%)
+- Frontend: 97 tests, line 91.80% / branch 84.22% (core/crypto 97.97%, core/offline 100%, core/auth 95.61%, core/api 100%)
+- E2E: n.a. (Scheduled for Phase 5)
+
+### Gate results
+- make lint ✅ (Spotless, Checkstyle, ESLint, Prettier clean)
+- make test ✅ (106 backend tests with random order + 97 frontend tests; all coverage gates met)
+- make e2e n.a. (Phase 5+)
+- make up ✅ (5/5 containers healthy, actuator UP at localhost:8080/actuator/health)
+- make scan ✅ (Port exposure: internal services strictly on 127.0.0.1; prod compose config resolves `SPRING_DATA_REDIS_PASSWORD` and `HP_MASTER_KEY`)
+
+### Bug-hunt agent
+- Report: `docs/reviews/AGENT-REVIEW-phase-1.md`: H:4 M:5 L:5
+  - All 4 HIGH fixed:
+    - [HIGH-1] Transaction Rollback on Token Reuse (Test: `df632ee`, Fix: `50bf5aa`)
+    - [HIGH-2] Frontend Device Registration Desync & Lockout on Re-login (Test: `08e7de5`, Fix: `90e63bc`)
+    - [HIGH-3] Set-PIN URL and Payload Schema Mismatch (Test: `787363d`, Fix: `af56aea`)
+    - [HIGH-4] Race Condition in `authInterceptor` on Concurrent 401s (Test: `aa573a5`, Fix: `cf3404b`)
+  - All 5 MEDIUM fixed:
+    - [MEDIUM-1] RFC 8785 JCS Key Comparison on Characters > U+FFFF (Test: `f08ca33`, Fix: `880173f`)
+    - [MEDIUM-2] Primary Key UUID Generation Uses UUIDv7 (Test: `ce377f8`, Fix: `2c1d6fc`)
+    - [MEDIUM-3] Missing Production Fail-Fast Configuration for `HP_MASTER_KEY` (Test: `2a34cd8`, Fix: `9fe977d`)
+    - [MEDIUM-4] Missing EC Curve Point Validation on Device Public Key Registration (Test: `dcfc8ff`, Fix: `9bca0b9`)
+    - [MEDIUM-5] Unbounded Memory Growth & IP Spoofing in Rate Limiting & OTP (Test: `f2a9041`, Fix: `ddb3b93`)
+  - 4 of 5 LOW fixed:
+    - [LOW-1] Hardcoded Insecure Cookie Flag in `AuthController` (Fix: `d60435a`)
+    - [LOW-3] Missing Merchant Certificate Retrieval in `GET /devices/me` (Test: `08e7de5`, Fix: `90e63bc`)
+    - [LOW-4] Missing ArchUnit Rule and Weak Authorization on `POST /devices` (Test: `65c75aa`, Fix: `d60435a`)
+    - [LOW-5] WAI-ARIA Accessibility Violation in Register Role Selector (Fix: `d60435a`)
+  - 1 LOW accounted for:
+    - [LOW-2] Double-submit CSRF token architecture on refresh cookie: Scheduled for Phase 8 security hardening per `docs/12-implementation-plan.md` Task 8.1 and `docs/08-security-threat-model.md` §5.
+
+### Deviations from spec / proposals
+- none
+
+### Known issues / next
+- Next: Phase 2 (Ledger & Accounts) on branch `phase/2-ledger-accounts`.
+
+### How to demo
+1. `make up`
+2. Open http://localhost:8081/auth/register in browser.
+3. Register a new user (`+919876543210`, password `Password123!`).
+4. View the dispatched OTP email in Mailpit at http://localhost:8025.
+5. Enter the OTP at http://localhost:8081/auth/verify-otp to activate account.
+6. Login at http://localhost:8081/auth/login and proceed through device enrollment and PIN setup.
