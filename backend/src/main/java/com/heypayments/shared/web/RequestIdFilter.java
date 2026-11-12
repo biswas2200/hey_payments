@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.regex.Pattern;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -15,7 +16,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Filter that attaches a unique X-Request-Id to every HTTP request and response, and sets it in the
- * logging MDC context for structured tracing.
+ * logging MDC context for structured tracing. Incoming IDs are strictly validated to prevent CRLF
+ * and log injection.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -23,6 +25,11 @@ public class RequestIdFilter extends OncePerRequestFilter {
 
   public static final String REQUEST_ID_HEADER = "X-Request-Id";
   public static final String MDC_KEY = "requestId";
+  private static final Pattern VALID_REQUEST_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{1,64}$");
+
+  private static boolean isValidRequestId(String requestId) {
+    return StringUtils.hasText(requestId) && VALID_REQUEST_ID_PATTERN.matcher(requestId).matches();
+  }
 
   @Override
   protected void doFilterInternal(
@@ -30,7 +37,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
 
     String requestId = request.getHeader(REQUEST_ID_HEADER);
-    if (!StringUtils.hasText(requestId)) {
+    if (!isValidRequestId(requestId)) {
       requestId = UuidV7Generator.generate().toString();
     }
 
