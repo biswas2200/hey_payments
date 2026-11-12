@@ -4,20 +4,7 @@
  */
 
 function compareKeys(a: string, b: string): number {
-  const aLen = a.length;
-  const bLen = b.length;
-  let i = 0;
-  let j = 0;
-  while (i < aLen && j < bLen) {
-    const cpA = a.codePointAt(i)!;
-    const cpB = b.codePointAt(j)!;
-    if (cpA !== cpB) {
-      return cpA - cpB;
-    }
-    i += cpA > 0xffff ? 2 : 1;
-    j += cpB > 0xffff ? 2 : 1;
-  }
-  return aLen - bLen;
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 export function canonicalize(val: unknown): string {
