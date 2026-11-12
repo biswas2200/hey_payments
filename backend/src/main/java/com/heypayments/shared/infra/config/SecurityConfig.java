@@ -1,10 +1,11 @@
 package com.heypayments.shared.infra.config;
 
+import com.heypayments.shared.infra.security.ProblemAccessDeniedHandler;
+import com.heypayments.shared.infra.security.ProblemAuthenticationEntryPoint;
 import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,9 +20,16 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
   private final Environment environment;
+  private final ProblemAuthenticationEntryPoint authenticationEntryPoint;
+  private final ProblemAccessDeniedHandler accessDeniedHandler;
 
-  public SecurityConfig(Environment environment) {
+  public SecurityConfig(
+      Environment environment,
+      ProblemAuthenticationEntryPoint authenticationEntryPoint,
+      ProblemAccessDeniedHandler accessDeniedHandler) {
     this.environment = environment;
+    this.authenticationEntryPoint = authenticationEntryPoint;
+    this.accessDeniedHandler = accessDeniedHandler;
   }
 
   /**
@@ -39,14 +47,19 @@ public class SecurityConfig {
         .cors(cors -> {})
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .httpBasic(Customizer.withDefaults())
+        .exceptionHandling(
+            exceptions ->
+                exceptions
+                    .authenticationEntryPoint(authenticationEntryPoint)
+                    .accessDeniedHandler(accessDeniedHandler))
         .authorizeHttpRequests(
             auth -> {
               auth.requestMatchers(
                       "/api/health", "/actuator/health", "/actuator/health/**", "/actuator/info")
                   .permitAll();
               if (isDev) {
-                auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();
+                auth.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                    .permitAll();
               }
               auth.anyRequest().authenticated();
             });
