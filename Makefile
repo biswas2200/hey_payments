@@ -35,7 +35,7 @@ test-fe:
 	cd frontend && npm test -- --watch=false
 
 e2e:
-	@echo "E2E tests will run via Playwright in Phase 5+"
+	cd frontend && NODE_PATH=node_modules npx playwright test --config=../playwright.config.ts
 
 lint:
 	cd backend && ./mvnw spotless:check checkstyle:check

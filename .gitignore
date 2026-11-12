@@ -33,3 +33,5 @@ frontend/*.log
 # E2E & reports
 e2e/test-results/
 e2e/playwright-report/
+frontend/test-results/
+test-results/
