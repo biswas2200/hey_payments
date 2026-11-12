@@ -57,6 +57,7 @@ reset-db:
 
 scan:
 	@echo "Running security scans..."
+	./scripts/test-port-exposure.sh
 
 vectors:
 	@echo "Shared protocol test vectors generation will run in Phase 1+"

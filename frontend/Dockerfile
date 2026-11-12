@@ -7,11 +7,11 @@ RUN npm ci
 COPY . .
 RUN npm run build -- --configuration production
 
-FROM nginx:1.27-alpine
-COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html
+FROM nginxinc/nginx-unprivileged:1.27-alpine
+COPY --from=build --chown=nginx:nginx /app/dist/frontend/browser /usr/share/nginx/html
 COPY security-headers.conf /etc/nginx/security-headers.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
