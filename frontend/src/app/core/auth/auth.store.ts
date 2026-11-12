@@ -7,6 +7,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AuthApiService } from '../api/auth-api.service';
 import { KeyService } from '../crypto/key.service';
+import { derivePinHash } from '../crypto/crypto';
 import type {
   DeviceResponse,
   LoginRequest,
@@ -81,11 +82,20 @@ export class AuthStore {
     }
   }
 
-  async setPin(pin: string): Promise<void> {
+  async setPin(pin: string, password: string): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
-      await firstValueFrom(this.api.setPin({ pin }));
+      await firstValueFrom(this.api.setPin({ pin, password }));
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const hash = await derivePinHash(pin, salt);
+      localStorage.setItem(
+        'hp_pin_salt',
+        Array.from(salt)
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+      );
+      localStorage.setItem('hp_pin_hash', hash);
     } catch (err: unknown) {
       const detail = this.extractErrorMessage(err, 'Failed to set payment PIN');
       this.error.set(detail);

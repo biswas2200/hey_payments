@@ -48,6 +48,7 @@ export interface TokenResponse {
 
 export interface SetPinRequest {
   pin: string;
+  password: string;
 }
 
 export interface JwkDto {

@@ -51,7 +51,7 @@ export class AuthApiService {
   }
 
   setPin(req: SetPinRequest): Observable<void> {
-    return this.http.put<void>(`${this.baseUrl}/users/me/pin`, req);
+    return this.http.put<void>(`${this.baseUrl}/auth/pin`, req);
   }
 
   registerDevice(req: RegisterDeviceRequest): Observable<DeviceResponse> {

@@ -18,11 +18,13 @@ export class SetPinComponent {
 
   readonly pin = signal('');
   readonly confirmPin = signal('');
+  readonly password = signal('');
   readonly formError = signal<string | null>(null);
 
   async onSubmit(): Promise<void> {
     const p1 = this.pin().trim();
     const p2 = this.confirmPin().trim();
+    const pwd = this.password().trim();
 
     if (!p1 || p1.length !== 6 || !/^\d{6}$/.test(p1)) {
       this.formError.set('PIN must be exactly 6 digits');
@@ -34,9 +36,14 @@ export class SetPinComponent {
       return;
     }
 
+    if (!pwd) {
+      this.formError.set('Current password is required to verify PIN setup');
+      return;
+    }
+
     this.formError.set(null);
     try {
-      await this.auth.setPin(p1);
+      await this.auth.setPin(p1, pwd);
 
       if (this.auth.isMerchant()) {
         await this.router.navigate(['/merchant']);

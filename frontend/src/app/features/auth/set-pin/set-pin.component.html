@@ -50,6 +50,21 @@
       />
     </div>
 
+    <div class="field">
+      <label for="current-password" class="label">Current Password</label>
+      <input
+        id="current-password"
+        name="password"
+        type="password"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+        placeholder="Enter your account password"
+        class="input"
+        required
+        autocomplete="current-password"
+      />
+    </div>
+
     <button type="submit" class="btn btn-primary" [disabled]="auth.loading()">
       @if (auth.loading()) {
         Saving PIN...
