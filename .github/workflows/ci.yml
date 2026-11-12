@@ -57,7 +57,7 @@ jobs:
       - name: Run Backend Tests
         run: |
           cd backend
-          ./mvnw verify
+          ./mvnw verify -Dsurefire.runOrder=random
 
   frontend-test:
     name: Frontend Tests

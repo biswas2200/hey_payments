@@ -29,7 +29,7 @@ dev:
 test: test-be test-fe
 
 test-be:
-	cd backend && ./mvnw clean verify
+	cd backend && ./mvnw clean verify -Dsurefire.runOrder=random
 
 test-fe:
 	cd frontend && npm test -- --watch=false
