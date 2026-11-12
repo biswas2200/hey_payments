@@ -1,3 +1,52 @@
+# Re-review: Phase 0, 2026-11-12 23:20 IST (@ `95067b8`)
+
+**Verdict: CHANGES REQUIRED (2 small items).** All 6 original MUST-FIX items are fixed and verified. Two new defects block approval: a test suite that fails depending on run order, and an invisible logo in dark mode. Fix both test-first, then resubmit. I'll do a quick confirm, and Phase 0 can then be tagged `v0.1.0`, merged to `main`, and Phase 1 can start.
+
+**Git:** `phase/0-foundation` local = origin = `95067b8` (0 ahead / 0 behind); `main` local = origin = `2f91529`; working tree clean. Phase 0 is not merged into `main` yet (expected before approval). Note that GitHub's default branch (`origin/HEAD`) currently points to `phase/0-foundation`. Switch it back to `main` when Phase 0 merges.
+
+## What I verified independently (separate worktree at `95067b8`, plus the live compose stack)
+| Check | Result |
+|---|---|
+| Frontend `npm ci`, `lint`, `format:check` | ✅ |
+| Frontend unit tests + coverage | ✅ 12/12, lines 79.3%, branches 81.6% |
+| Frontend production build | ✅ |
+| `make e2e` (Playwright, 2 tests against live stack) | ✅ 0 console errors, styled body, banner, logo, SW registered, dark bg |
+| Backend `./mvnw verify` | ❌ **48/50, 2 order-dependent failures** (MUST-FIX A) |
+| MUST-FIX 1 CSP | ✅ explicit policy; per-request nonce in header **matches** `ngCspNonce` and inline tags in the same response; `inlineCritical: false` |
+| MUST-FIX 2 auth | ✅ no Basic auth; no generated password in logs; unknown route → 401 `application/problem+json` `UNAUTHENTICATED`; `Authorization: Basic` rejected |
+| MUST-FIX 3 exposure | ✅ from LAN IP only 8081 is reachable (5432/6379/8025/1025/8080 closed); Redis `NOAUTH` without password; `scripts/test-port-exposure.sh` in CI |
+| MUST-FIX 4 theme/fonts/brand | ✅ tokens identical to `docs/design/tokens.scss` (formatting only); `prefers-color-scheme` dark works; Inter + Space Grotesk load offline; brand icons + manifest. ⚠️ dark-mode wordmark (MUST-FIX B) |
+| MUST-FIX 5 user-facing copy | ✅ "Online · synced" / "Offline · payments still work", Lucide icons, dev card only when `isDevMode()` |
+| MUST-FIX 6 non-root nginx | ✅ `uid=101(nginx)`, `nginx-unprivileged` |
+| SHOULD-FIX | ✅ `/actuator` no longer proxied (falls through to the SPA); ECS structured logs in prod; `/swagger-ui.html` 302 in dev; `TRUNCATE` blocked; dossier corrected |
+
+## MUST-FIX
+### A. [HIGH] The backend suite is order-dependent: `./mvnw verify` fails 2/50 on a different machine or run order
+1. `ActuatorSecurityTest.shouldAllowAnonymousHealthWithoutComponentDetails`: `Status expected:<200> but was:<503>`, preceded by `HikariPool-3 - Failed to validate connection … This connection has been closed` and `DataSourceHealthIndicator: DataSource health check failed`.
+   **Cause:** `BaseIntegrationTest` declares `@Testcontainers` + `@Container static PostgreSQLContainer`. JUnit stops that container after **each** test class, but Spring's test-context cache reuses the application context (and its Hikari pool) for the next class. The next class then talks to a dead database. It passes or fails depending on class order.
+   **Fix:** use the singleton-container pattern. Remove `@Testcontainers`/`@Container`, start the container once in a `static {}` block (or a `@TestConfiguration` bean with `@ServiceConnection` imported by the base class), and never stop it per class. Don't paper over it with `@DirtiesContext`, which only slows the suite down.
+2. `ProblemSecurityHandlersTest.accessDeniedHandlerFallbackRequestId:94`: the body contains `requestId":"test-req-id-123"` instead of `hdr-denied-456`.
+   **Cause:** `GlobalExceptionHandlerTest` calls `MDC.put("requestId","test-req-id-123")` and never clears it. MDC is thread-local, so it leaks into later tests on the same thread.
+   **Fix:** `@AfterEach MDC.clear()` in every test that writes MDC, and `@BeforeEach MDC.clear()` in tests that assert on request IDs.
+3. **Regression guard:** run surefire with `-Dsurefire.runOrder=random` in CI (and in `make test-be`) so order dependencies fail immediately. Show two consecutive green random-order runs in PROGRESS.md.
+
+### B. [MEDIUM] The wordmark is nearly invisible in dark mode
+- **Evidence:** your own `docs/design/screenshots/phase-0-shell-dark.png`. "hey.payments" is ink `#0E1B2C` on `#0B1420`. `app.html` always loads `brand/logo-wordmark-light.svg`.
+- **Fix:** show `logo-wordmark-dark.svg` whenever the dark theme is active, both under `prefers-color-scheme: dark` **and** under `:root[data-theme='dark']`. Two `<img>` elements toggled by theme CSS, or a small `hp-logo` component, both work. Don't recolour the SVG (AGENTS.md §10).
+- **Test:** extend the dark Playwright test: the dark wordmark is visible and the light one is hidden, there are zero console errors in dark mode too, and the banner is visible.
+
+## SHOULD-FIX (carry into Phase 1 if not quick)
+- The smoke tests write `docs/design/screenshots/*.png` on **every** run (including CI), which dirties the repo. Write them to `test-results/` and copy them into `docs/` only when updating PROGRESS evidence.
+- `docker-compose.yml` falls back to `REDIS_PASSWORD:-changeme`. That's fine for dev, but `application-prod.yml` must require `SPRING_DATA_REDIS_PASSWORD` with no default (same rule as the DB password).
+
+## Resubmission
+- [ ] `test:` commit reproducing A.1/A.2 (random order), then the `fix:` commit
+- [ ] `test:` commit for B (dark logo), then the `fix:` commit
+- [ ] `./mvnw verify -Dsurefire.runOrder=random` green twice, `make test`, `make e2e` green, screenshots refreshed
+- [ ] PROGRESS.md updated, then "Phase 0 ready for architect re-review"
+
+---
+
 # Review: Phase 0 (Foundation): final, 2026-11-12 20:15 IST
 
 **Verdict: CHANGES REQUIRED.** Fix the 6 MUST-FIX items, then resubmit. Phase 1 must not start before this review says APPROVED.
