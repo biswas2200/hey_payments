@@ -23,6 +23,13 @@ public class SecurityConfig {
   private final ProblemAuthenticationEntryPoint authenticationEntryPoint;
   private final ProblemAccessDeniedHandler accessDeniedHandler;
 
+  /**
+   * Constructs the security configuration with custom authentication and access denial handlers.
+   *
+   * @param environment current active environment profiles
+   * @param authenticationEntryPoint custom RFC 9457 authentication entry point
+   * @param accessDeniedHandler custom RFC 9457 access denied handler
+   */
   public SecurityConfig(
       Environment environment,
       ProblemAuthenticationEntryPoint authenticationEntryPoint,

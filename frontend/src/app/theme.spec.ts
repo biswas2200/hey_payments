@@ -20,15 +20,15 @@ describe('Design Tokens & Typography', () => {
 
   it('should define Calm Ledger v1 design tokens on :root', () => {
     const style = getComputedStyle(document.documentElement);
-    expect(style.getPropertyValue('--hp-primary').trim()).toBe('#0F766E');
-    expect(style.getPropertyValue('--hp-bg').trim()).toBe('#F7F5F0');
+    expect(style.getPropertyValue('--hp-primary').trim().toLowerCase()).toBe('#0f766e');
+    expect(style.getPropertyValue('--hp-bg').trim().toLowerCase()).toBe('#f7f5f0');
   });
 
   it('should activate dark tokens when data-theme is dark', () => {
     document.documentElement.setAttribute('data-theme', 'dark');
     const style = getComputedStyle(document.documentElement);
-    expect(style.getPropertyValue('--hp-bg').trim()).toBe('#0B1420');
-    expect(style.getPropertyValue('--hp-primary').trim()).toBe('#2DD4BF');
+    expect(style.getPropertyValue('--hp-bg').trim().toLowerCase()).toBe('#0b1420');
+    expect(style.getPropertyValue('--hp-primary').trim().toLowerCase()).toBe('#2dd4bf');
   });
 
   it('should declare Inter in the body font family token', () => {

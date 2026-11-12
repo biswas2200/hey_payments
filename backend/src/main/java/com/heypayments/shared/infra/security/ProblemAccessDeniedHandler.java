@@ -43,7 +43,11 @@ public class ProblemAccessDeniedHandler implements AccessDeniedHandler {
     }
 
     ErrorCode code = ErrorCode.FORBIDDEN;
-    ProblemResponse body =
+    response.setStatus(code.getStatusCode());
+    response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+    response.setCharacterEncoding("UTF-8");
+
+    final ProblemResponse body =
         new ProblemResponse(
             code.getTypeUri(),
             code.getTitle(),
@@ -53,10 +57,6 @@ public class ProblemAccessDeniedHandler implements AccessDeniedHandler {
             request.getRequestURI(),
             requestId,
             null);
-
-    response.setStatus(code.getStatusCode());
-    response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-    response.setCharacterEncoding("UTF-8");
     jsonMapper.writeValue(response.getOutputStream(), body);
   }
 }
