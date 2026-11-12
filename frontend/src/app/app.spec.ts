@@ -18,13 +18,16 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render brand logo image', async () => {
+  it('should render both light and dark brand logo images for theme switching', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    const logo = compiled.querySelector('img.app-logo');
-    expect(logo).toBeTruthy();
-    expect(logo?.getAttribute('src')).toBe('brand/logo-wordmark-light.svg');
+    const lightLogo = compiled.querySelector('img.app-logo--light');
+    const darkLogo = compiled.querySelector('img.app-logo--dark');
+    expect(lightLogo).toBeTruthy();
+    expect(lightLogo?.getAttribute('src')).toBe('brand/logo-wordmark-light.svg');
+    expect(darkLogo).toBeTruthy();
+    expect(darkLogo?.getAttribute('src')).toBe('brand/logo-wordmark-dark.svg');
   });
 
   it('should render online status banner with approved language: Online · synced', async () => {
