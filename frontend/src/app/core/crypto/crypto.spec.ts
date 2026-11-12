@@ -63,6 +63,12 @@ describe('Frontend Crypto & Shared Test Vectors', () => {
       expect(canonicalize(input)).toBe('{"B":3,"a":2,"aa":4,"z":1}');
     });
 
+    it('should sort keys by UTF-16 code units (RFC 8785 §3.2.3), placing surrogate pairs before U+FFFF', () => {
+      // \uD83D\uDE00 is 😄 (high surrogate 0xD83D < 0xFFFF)
+      const input = { '\uFFFF': 'high-bmp', '\uD83D\uDE00': 'surrogate-pair' };
+      expect(canonicalize(input)).toBe('{"\uD83D\uDE00":"surrogate-pair","\uFFFF":"high-bmp"}');
+    });
+
     it('should handle nested arrays and primitives properly', () => {
       const input = { arr: [null, true, false, 0, -42, 3.1415], str: 'hello "world" \n' };
       expect(canonicalize(input)).toBe(
