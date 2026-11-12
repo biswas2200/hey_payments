@@ -49,3 +49,12 @@ EOF
 )
 
 echo "$VIOLATIONS"
+
+# Verify per docs/reviews/REVIEW-phase-0.md Condition C that prod compose config resolves SPRING_DATA_REDIS_PASSWORD
+echo "Checking prod compose environment variable resolution..."
+PROD_COMPOSE_OUT=$(SPRING_PROFILE=prod docker compose --env-file .env.example config)
+if ! echo "$PROD_COMPOSE_OUT" | grep -q "SPRING_DATA_REDIS_PASSWORD: changeme"; then
+    echo "ERROR: backend service environment in docker compose does not configure SPRING_DATA_REDIS_PASSWORD" >&2
+    exit 1
+fi
+echo "PROD COMPOSE CONFIG CHECK PASSED: SPRING_DATA_REDIS_PASSWORD is wired correctly."
