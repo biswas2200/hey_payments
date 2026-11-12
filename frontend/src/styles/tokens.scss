@@ -1,53 +1,63 @@
-/* Hey Payments design tokens - source of truth: docs/design/tokens.json */
+// Hey Payments design tokens, "Calm Ledger" v1
+// Copy to frontend/src/styles/_tokens.scss and @use it from styles.scss.
+// Values are identical to docs/design/tokens.json and the reference screens (docs/design/reference/).
+// Do not invent new colours: add a token here (via a proposal) first.
+
 :root {
-  /* Colors - Light Theme (default) */
-  --hp-color-bg: #f7f5f0;
-  --hp-color-surface: #ffffff;
-  --hp-color-surface-alt: #efebe3;
-  --hp-color-ink: #0e1b2c;
-  --hp-color-ink-muted: #4a5568;
-  --hp-color-border: #6b7280;
-  --hp-color-divider: #e2ded5;
-  --hp-color-primary: #0f766e;
-  --hp-color-on-primary: #ffffff;
-  --hp-color-primary-soft: #ccfbf1;
-  --hp-color-accent: #f5a524;
-  --hp-color-on-accent: #0e1b2c;
-  --hp-color-status-offline: #4338ca;
-  --hp-color-status-offline-bg: #ede9fe;
-  --hp-color-status-pending: #b45309;
-  --hp-color-status-pending-bg: #fef3c7;
-  --hp-color-status-settled: #15803d;
-  --hp-color-status-settled-bg: #dcfce7;
-  --hp-color-status-failed: #b91c1c;
-  --hp-color-status-failed-bg: #fee2e2;
-  --hp-color-focus: #2563eb;
+  // ---- colour: surfaces & text ----
+  --hp-bg: #f7f5f0; // paper, page background
+  --hp-surface: #ffffff; // cards, sheets, keypad keys
+  --hp-surface-alt: #efebe3; // tracks, chips, subtle fills
+  --hp-ink: #0e1b2c; // primary text, phone frame
+  --hp-ink-2: #334155; // secondary text
+  --hp-muted: #5b6576; // labels, captions (>= 4.5:1 on bg)
+  --hp-line: #e2ded5; // dividers, card borders
+  --hp-border-strong: #6b7280; // input borders (>= 3:1)
 
-  /* Typography */
-  --hp-font-family-display: 'Space Grotesk', system-ui, sans-serif;
-  --hp-font-family-body: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
-  --hp-font-family-mono: 'JetBrains Mono', ui-monospace, monospace;
+  // ---- colour: brand ----
+  --hp-primary: #0f766e; // teal: buttons, links, focus accents
+  --hp-on-primary: #ffffff;
+  --hp-primary-2: #14b8a6; // bullets, charts
+  --hp-primary-soft: #d5f5ef; // tinted panels, icon chips
+  --hp-mint: #2dd4bf; // logo gradient start, dark-mode primary
+  --hp-accent: #f5a524; // saffron: hero CTA "Pay without internet", key numbers
+  --hp-on-accent: #0e1b2c;
+  --hp-accent-soft: #fdefd3;
+  --hp-night: #0b1420; // dark surfaces (merchant summary card, admin sidebar)
+  --hp-night-2: #132033;
 
-  --hp-font-scale-display: 2.5rem;
-  --hp-font-scale-h1: 2rem;
-  --hp-font-scale-h2: 1.5rem;
-  --hp-font-scale-h3: 1.25rem;
-  --hp-font-scale-body-lg: 1.125rem;
-  --hp-font-scale-body: 1rem;
-  --hp-font-scale-caption: 0.875rem;
-  --hp-font-scale-overline: 0.75rem;
-  --hp-font-scale-amount-hero: 3rem;
+  // ---- colour: status language (always pair with icon + label) ----
+  --hp-offline: #4338ca;
+  --hp-offline-soft: #e0e7ff; // icon: wifi-off
+  --hp-pending: #b45309;
+  --hp-pending-soft: #fef3c7; // icon: refresh-cw
+  --hp-settled: #15803d;
+  --hp-settled-soft: #dcfce7; // icon: circle-check
+  --hp-failed: #b91c1c;
+  --hp-failed-soft: #fee2e2; // icon: circle-x
 
-  --hp-font-weight-regular: 400;
-  --hp-font-weight-medium: 500;
-  --hp-font-weight-semibold: 600;
-  --hp-font-weight-bold: 700;
+  --hp-focus: #2563eb;
 
-  --hp-line-height-tight: 1.15;
-  --hp-line-height-normal: 1.5;
+  // ---- gradients ----
+  --hp-grad-brand: linear-gradient(135deg, #2dd4bf, #0f766e); // logo mark, app icon
+  --hp-grad-balance: linear-gradient(135deg, #0f766e, #0b4f4a); // offline balance card
+  --hp-grad-night: linear-gradient(135deg, #132033, #0b1420); // merchant takings card
 
-  /* Spacing */
-  --hp-space-0: 0px;
+  // ---- typography ----
+  --hp-font-display: 'Space Grotesk', system-ui, sans-serif; // headings, ALL money amounts
+  --hp-font-body: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+  --hp-font-mono: 'JetBrains Mono', ui-monospace, monospace; // receipt codes, ids
+  // mobile type scale (px), from the reference screens
+  --hp-fs-amount-hero: 48px; // confirm/receipt amount, weight 700
+  --hp-fs-amount-lg: 34px; // balance card amount
+  --hp-fs-title: 19px; // screen title, weight 800
+  --hp-fs-body: 15px;
+  --hp-fs-small: 13px;
+  --hp-fs-label: 11px; // UPPERCASE labels, weight 800, letter-spacing .12em
+  --hp-lh-tight: 1.1;
+  --hp-lh-body: 1.45;
+
+  // ---- spacing (4-pt grid) ----
   --hp-space-1: 4px;
   --hp-space-2: 8px;
   --hp-space-3: 12px;
@@ -56,72 +66,94 @@
   --hp-space-6: 32px;
   --hp-space-7: 48px;
   --hp-space-8: 64px;
+  --hp-screen-pad: 18px; // horizontal padding of mobile screens
 
-  /* Radius */
-  --hp-radius-sm: 8px;
-  --hp-radius-md: 12px;
-  --hp-radius-lg: 20px;
-  --hp-radius-pill: 999px;
+  // ---- radius ----
+  --hp-r-sm: 12px; // keypad keys, banners, chips
+  --hp-r-md: 16px; // buttons, list rows
+  --hp-r-lg: 20px; // balance card, QR container
+  --hp-r-xl: 26px; // desktop cards
+  --hp-r-pill: 999px;
 
-  /* Elevation */
-  --hp-elevation-1: 0 1px 2px rgba(14, 27, 44, 0.08);
-  --hp-elevation-2: 0 4px 12px rgba(14, 27, 44, 0.1);
-  --hp-elevation-3: 0 12px 32px rgba(14, 27, 44, 0.16);
+  // ---- elevation ----
+  --hp-shadow-1: 0 1px 2px rgba(14, 27, 44, 0.06);
+  --hp-shadow-2: 0 1px 2px rgba(14, 27, 44, 0.06), 0 12px 32px rgba(14, 27, 44, 0.07);
+  --hp-shadow-3: 0 30px 60px rgba(14, 27, 44, 0.28);
 
-  /* Motion */
-  --hp-motion-duration-instant: 100ms;
-  --hp-motion-duration-fast: 160ms;
-  --hp-motion-duration-base: 240ms;
-  --hp-motion-duration-slow: 400ms;
-  --hp-motion-duration-success: 600ms;
+  // ---- motion ----
+  --hp-dur-instant: 100ms;
+  --hp-dur-fast: 160ms;
+  --hp-dur-base: 240ms;
+  --hp-dur-slow: 400ms;
+  --hp-dur-success: 600ms;
+  --hp-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --hp-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --hp-ease-exit: cubic-bezier(0.3, 0, 1, 1);
 
-  --hp-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --hp-motion-ease-enter: cubic-bezier(0, 0, 0, 1);
-  --hp-motion-ease-exit: cubic-bezier(0.3, 0, 1, 1);
-
-  /* Touch target minimum (WCAG 2.2 AA) */
-  --hp-touch-target-min: 44px;
+  // ---- sizing ----
+  --hp-touch: 44px; // minimum touch target
+  --hp-key-h: 44px; // keypad key height
+  --hp-btn-h: 48px;
 }
 
-[data-theme='dark'] {
-  --hp-color-bg: #0b1420;
-  --hp-color-surface: #132033;
-  --hp-color-surface-alt: #1b2a40;
-  --hp-color-ink: #e8eef5;
-  --hp-color-ink-muted: #94a3b8;
-  --hp-color-border: #64748b;
-  --hp-color-divider: #22324a;
-  --hp-color-primary: #2dd4bf;
-  --hp-color-on-primary: #0b1420;
-  --hp-color-primary-soft: #134e4a;
-  --hp-color-accent: #f5a524;
-  --hp-color-on-accent: #0e1b2c;
-  --hp-color-status-offline: #a5b4fc;
-  --hp-color-status-offline-bg: #1e1b4b;
-  --hp-color-status-pending: #fbbf24;
-  --hp-color-status-pending-bg: #451a03;
-  --hp-color-status-settled: #4ade80;
-  --hp-color-status-settled-bg: #052e16;
-  --hp-color-status-failed: #f87171;
-  --hp-color-status-failed-bg: #450a0a;
-  --hp-color-focus: #93c5fd;
+// Dark theme (system preference unless user forces light)
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --hp-bg: #0b1420;
+    --hp-surface: #132033;
+    --hp-surface-alt: #1b2a40;
+    --hp-ink: #e8eef5;
+    --hp-ink-2: #c9d4e2;
+    --hp-muted: #94a3b8;
+    --hp-line: #22324a;
+    --hp-border-strong: #64748b;
+    --hp-primary: #2dd4bf;
+    --hp-on-primary: #0b1420;
+    --hp-primary-soft: #134e4a;
+    --hp-offline: #a5b4fc;
+    --hp-offline-soft: #1e1b4b;
+    --hp-pending: #fbbf24;
+    --hp-pending-soft: #3a2a0a;
+    --hp-settled: #4ade80;
+    --hp-settled-soft: #0f2e1c;
+    --hp-failed: #f87171;
+    --hp-failed-soft: #3b1111;
+    --hp-focus: #93c5fd;
+  }
+}
+:root[data-theme='dark'] {
+  --hp-bg: #0b1420;
+  --hp-surface: #132033;
+  --hp-surface-alt: #1b2a40;
+  --hp-ink: #e8eef5;
+  --hp-ink-2: #c9d4e2;
+  --hp-muted: #94a3b8;
+  --hp-line: #22324a;
+  --hp-border-strong: #64748b;
+  --hp-primary: #2dd4bf;
+  --hp-on-primary: #0b1420;
+  --hp-primary-soft: #134e4a;
+  --hp-offline: #a5b4fc;
+  --hp-offline-soft: #1e1b4b;
+  --hp-pending: #fbbf24;
+  --hp-pending-soft: #3a2a0a;
+  --hp-settled: #4ade80;
+  --hp-settled-soft: #0f2e1c;
+  --hp-failed: #f87171;
+  --hp-failed-soft: #3b1111;
+  --hp-focus: #93c5fd;
+}
+
+// Large-text mode (Settings → Accessibility)
+:root[data-text='large'] {
+  font-size: 130%;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --hp-motion-duration-instant: 0ms;
-    --hp-motion-duration-fast: 0ms;
-    --hp-motion-duration-base: 0ms;
-    --hp-motion-duration-slow: 0ms;
-    --hp-motion-duration-success: 0ms;
-  }
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    --hp-dur-fast: 0ms;
+    --hp-dur-base: 0ms;
+    --hp-dur-slow: 0ms;
+    --hp-dur-success: 120ms;
   }
 }

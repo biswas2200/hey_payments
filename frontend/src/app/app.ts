@@ -1,10 +1,18 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  inject,
+  isDevMode,
+  signal,
+} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { LucideCircleCheck, LucideRefreshCw, LucideWifiOff } from '@lucide/angular';
 import { ApiService, BackendStatus } from './services/api.service';
 import { ConnectivityService } from './core/connectivity/connectivity.service';
 
 @Component({
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, LucideCircleCheck, LucideRefreshCw, LucideWifiOff],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
@@ -12,6 +20,7 @@ import { ConnectivityService } from './core/connectivity/connectivity.service';
 })
 export class App implements OnInit {
   protected readonly title = signal('Hey Payments');
+  protected readonly isDev = signal(isDevMode());
   protected readonly backendStatus = signal<BackendStatus | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly loading = signal(false);
@@ -20,7 +29,9 @@ export class App implements OnInit {
   private readonly apiService = inject(ApiService);
 
   ngOnInit(): void {
-    this.checkBackendHealth();
+    if (this.isDev()) {
+      this.checkBackendHealth();
+    }
   }
 
   checkBackendHealth(): void {
@@ -32,7 +43,7 @@ export class App implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Could not connect to Spring Boot backend (http://localhost:8080).');
+        this.error.set('Could not connect to backend service.');
         this.loading.set(false);
       },
     });
