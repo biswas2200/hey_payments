@@ -15,6 +15,7 @@ import com.heypayments.merchant.application.MerchantService;
 import com.heypayments.merchant.domain.model.Merchant;
 import com.heypayments.shared.domain.exception.DomainException;
 import com.heypayments.shared.domain.exception.ErrorCode;
+import com.heypayments.shared.infra.id.UuidV7Generator;
 import java.security.interfaces.ECPublicKey;
 import java.time.Clock;
 import java.time.Instant;
@@ -63,7 +64,7 @@ public class DeviceService {
     }
 
     Instant now = clock.instant();
-    UUID deviceId = UUID.randomUUID();
+    UUID deviceId = UuidV7Generator.generate();
 
     DeviceEntity device =
         DeviceEntity.builder()

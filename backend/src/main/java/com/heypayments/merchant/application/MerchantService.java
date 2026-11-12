@@ -4,6 +4,7 @@ import com.heypayments.merchant.domain.model.Merchant;
 import com.heypayments.merchant.domain.model.MerchantStatus;
 import com.heypayments.merchant.infra.persistence.MerchantEntity;
 import com.heypayments.merchant.infra.persistence.MerchantRepository;
+import com.heypayments.shared.infra.id.UuidV7Generator;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
@@ -35,7 +36,7 @@ public class MerchantService {
     Instant now = clock.instant();
     MerchantEntity merchant =
         MerchantEntity.builder()
-            .id(UUID.randomUUID())
+            .id(UuidV7Generator.generate())
             .userId(userId)
             .displayName(displayName)
             .handle(handle)

@@ -15,6 +15,7 @@ import com.heypayments.merchant.application.MerchantService;
 import com.heypayments.merchant.domain.model.Merchant;
 import com.heypayments.shared.domain.exception.DomainException;
 import com.heypayments.shared.domain.exception.ErrorCode;
+import com.heypayments.shared.infra.id.UuidV7Generator;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
@@ -45,7 +46,7 @@ public class AuthService {
     }
 
     Instant now = clock.instant();
-    UUID userId = UUID.randomUUID();
+    UUID userId = UuidV7Generator.generate();
     UserRole role = UserRole.valueOf(req.role());
     String hashedPassword = passwordHasher.hashPassword(req.password());
 

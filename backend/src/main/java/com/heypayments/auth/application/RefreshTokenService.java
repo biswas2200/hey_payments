@@ -2,6 +2,7 @@ package com.heypayments.auth.application;
 
 import com.heypayments.auth.infra.persistence.RefreshTokenEntity;
 import com.heypayments.auth.infra.persistence.RefreshTokenRepository;
+import com.heypayments.shared.infra.id.UuidV7Generator;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -29,7 +30,7 @@ public class RefreshTokenService {
 
   @Transactional
   public String issueRefreshToken(UUID userId) {
-    UUID familyId = UUID.randomUUID();
+    UUID familyId = UuidV7Generator.generate();
     return createTokenRecord(userId, familyId);
   }
 
@@ -58,7 +59,7 @@ public class RefreshTokenService {
     }
 
     // Issue new token in same family
-    UUID newTokenId = UUID.randomUUID();
+    UUID newTokenId = UuidV7Generator.generate();
     String newRawToken = generateSecureTokenString();
     String newTokenHash = hashToken(newRawToken);
     Instant newExpiresAt = now.plus(REFRESH_TOKEN_VALIDITY_DAYS, ChronoUnit.DAYS);
@@ -126,7 +127,7 @@ public class RefreshTokenService {
 
     RefreshTokenEntity entity =
         RefreshTokenEntity.builder()
-            .id(UUID.randomUUID())
+            .id(UuidV7Generator.generate())
             .userId(userId)
             .tokenHash(tokenHash)
             .familyId(familyId)
