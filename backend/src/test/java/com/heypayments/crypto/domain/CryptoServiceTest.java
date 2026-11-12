@@ -28,6 +28,16 @@ class CryptoServiceTest {
 
     ECPublicKey parsed = cryptoService.fromUncompressedSec1(sec1);
     assertThat(parsed.getW()).isEqualTo(((ECPublicKey) keyPair.getPublic()).getW());
+
+    // Invalid SEC1 byte arrays
+    assertThatThrownBy(() -> cryptoService.fromUncompressedSec1(null))
+        .isInstanceOf(CryptoException.class);
+    assertThatThrownBy(() -> cryptoService.fromUncompressedSec1(new byte[64]))
+        .isInstanceOf(CryptoException.class);
+    byte[] badHeader = new byte[65];
+    badHeader[0] = 0x05;
+    assertThatThrownBy(() -> cryptoService.fromUncompressedSec1(badHeader))
+        .isInstanceOf(CryptoException.class);
   }
 
   @Test
@@ -61,6 +71,11 @@ class CryptoServiceTest {
     boolean tamperedValid =
         cryptoService.verifyEnvelope(tamperedEnvelope, (ECPublicKey) keyPair.getPublic());
     assertThat(tamperedValid).isFalse();
+
+    // Malformed signature must fail verification
+    SignedEnvelope badSigEnvelope = new SignedEnvelope(payload, "invalid-not-base64!!!");
+    assertThat(cryptoService.verifyEnvelope(badSigEnvelope, (ECPublicKey) keyPair.getPublic()))
+        .isFalse();
   }
 
   @Test
@@ -82,6 +97,12 @@ class CryptoServiceTest {
     byte[] wrongKey = cryptoService.generateMasterKey();
     assertThatThrownBy(() -> cryptoService.decryptPrivateKey(encrypted, wrongKey))
         .isInstanceOf(CryptoException.class);
+
+    // Too short ciphertext
+    assertThatThrownBy(() -> cryptoService.decryptPrivateKey(null, masterKey))
+        .isInstanceOf(CryptoException.class);
+    assertThatThrownBy(() -> cryptoService.decryptPrivateKey(new byte[10], masterKey))
+        .isInstanceOf(CryptoException.class);
   }
 
   @Test
@@ -96,6 +117,10 @@ class CryptoServiceTest {
     assertThat(jwk.get("kid")).isEqualTo("srv-test-1");
     assertThat(jwk.get("x")).isNotBlank();
     assertThat(jwk.get("y")).isNotBlank();
+
+    // JWK without kid
+    Map<String, String> jwkNoKid = cryptoService.toJwk(pub, null);
+    assertThat(jwkNoKid.containsKey("kid")).isFalse();
 
     ECPublicKey fromJwk = cryptoService.fromJwk(jwk.get("x"), jwk.get("y"));
     assertThat(fromJwk.getW()).isEqualTo(pub.getW());

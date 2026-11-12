@@ -66,8 +66,9 @@ public class ServerKeyService {
     return generateAndSaveKey(ServerKeyStatus.ACTIVE);
   }
 
-  @Transactional(readOnly = true)
+  @Transactional
   public Map<String, Object> getJwks() {
+    getActiveSigningKey();
     List<ServerKeyEntity> keys =
         serverKeyRepository.findAllByStatusIn(
             List.of(ServerKeyStatus.ACTIVE, ServerKeyStatus.RETIRING));

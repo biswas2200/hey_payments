@@ -72,47 +72,63 @@ class TestVectorGeneratorTest {
     }
 
     Path jcsPath = testVectorsDir.resolve("jcs.json");
-    objectMapper.writeValue(jcsPath.toFile(), jcsCases);
+    if (!Files.exists(jcsPath) || Boolean.getBoolean("generate.vectors")) {
+      objectMapper.writeValue(jcsPath.toFile(), jcsCases);
+    }
     assertThat(Files.exists(jcsPath)).isTrue();
 
-    // 2. Generate sign-verify.json with a deterministic EC keypair
-    KeyPair keyPair = cryptoService.generateP256KeyPair();
-    ECPublicKey pub = (ECPublicKey) keyPair.getPublic();
-    ECPrivateKey priv = (ECPrivateKey) keyPair.getPrivate();
-
-    byte[] sec1 = cryptoService.toUncompressedSec1(pub);
-    String sec1Base64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(sec1);
-    Map<String, String> jwk = cryptoService.toJwk(pub, "srv-test-key-01");
-    String privPkcs8Base64 = Base64.getEncoder().encodeToString(priv.getEncoded());
-
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("v", 1);
-    payload.put("t", "MC");
-    payload.put("merchantId", "01931234-5678-7000-8000-000000000001");
-    payload.put("deviceId", "01931234-5678-7000-8000-000000000009");
-    payload.put("displayName", "Ravi General Store");
-    payload.put("issuedAt", "2026-11-12T10:00:00Z");
-
-    SignedEnvelope envelope = cryptoService.signEnvelope(payload, priv);
-    assertThat(cryptoService.verifyEnvelope(envelope, pub)).isTrue();
-
-    Map<String, Object> signVerifyData = new LinkedHashMap<>();
-    signVerifyData.put(
-        "description", "Cross-language ECDSA P-256 / SHA-256 / IEEE P1363 test vector");
-    signVerifyData.put("privateKeyPkcs8Base64", privPkcs8Base64);
-    signVerifyData.put("publicKeySec1Base64Url", sec1Base64Url);
-    signVerifyData.put("publicKeyJwk", jwk);
-    signVerifyData.put("payload", payload);
-    signVerifyData.put("canonicalJson", jcs.canonicalize(payload));
-    signVerifyData.put("signatureP1363Base64Url", envelope.s());
-
-    // Tampered payload and tampered signature cases
-    Map<String, Object> tamperedPayload = new LinkedHashMap<>(payload);
-    tamperedPayload.put("displayName", "Malicious Store");
-    signVerifyData.put("tamperedPayload", tamperedPayload);
-
     Path signVerifyPath = testVectorsDir.resolve("sign-verify.json");
-    objectMapper.writeValue(signVerifyPath.toFile(), signVerifyData);
+    if (!Files.exists(signVerifyPath) || Boolean.getBoolean("generate.vectors")) {
+      // 2. Generate sign-verify.json with a deterministic EC keypair
+      KeyPair keyPair = cryptoService.generateP256KeyPair();
+      ECPublicKey pub = (ECPublicKey) keyPair.getPublic();
+      ECPrivateKey priv = (ECPrivateKey) keyPair.getPrivate();
+
+      byte[] sec1 = cryptoService.toUncompressedSec1(pub);
+      String sec1Base64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(sec1);
+      Map<String, String> jwk = cryptoService.toJwk(pub, "srv-test-key-01");
+      String privPkcs8Base64 = Base64.getEncoder().encodeToString(priv.getEncoded());
+
+      Map<String, Object> payload = new LinkedHashMap<>();
+      payload.put("v", 1);
+      payload.put("t", "MC");
+      payload.put("merchantId", "01931234-5678-7000-8000-000000000001");
+      payload.put("deviceId", "01931234-5678-7000-8000-000000000009");
+      payload.put("displayName", "Ravi General Store");
+      payload.put("issuedAt", "2026-11-12T10:00:00Z");
+
+      SignedEnvelope envelope = cryptoService.signEnvelope(payload, priv);
+      assertThat(cryptoService.verifyEnvelope(envelope, pub)).isTrue();
+
+      Map<String, Object> signVerifyData = new LinkedHashMap<>();
+      signVerifyData.put(
+          "description", "Cross-language ECDSA P-256 / SHA-256 / IEEE P1363 test vector");
+      signVerifyData.put("privateKeyPkcs8Base64", privPkcs8Base64);
+      signVerifyData.put("publicKeySec1Base64Url", sec1Base64Url);
+      signVerifyData.put("publicKeyJwk", jwk);
+      signVerifyData.put("payload", payload);
+      signVerifyData.put("canonicalJson", jcs.canonicalize(payload));
+      signVerifyData.put("signatureP1363Base64Url", envelope.s());
+
+      // Tampered payload and tampered signature cases
+      Map<String, Object> tamperedPayload = new LinkedHashMap<>(payload);
+      tamperedPayload.put("displayName", "Malicious Store");
+      signVerifyData.put("tamperedPayload", tamperedPayload);
+
+      objectMapper.writeValue(signVerifyPath.toFile(), signVerifyData);
+    } else {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> existingVector =
+          objectMapper.readValue(signVerifyPath.toFile(), Map.class);
+      @SuppressWarnings("unchecked")
+      Map<String, String> existingJwk = (Map<String, String>) existingVector.get("publicKeyJwk");
+      ECPublicKey existingPub = cryptoService.fromJwk(existingJwk.get("x"), existingJwk.get("y"));
+      @SuppressWarnings("unchecked")
+      Map<String, Object> payload = (Map<String, Object>) existingVector.get("payload");
+      SignedEnvelope existingEnv =
+          new SignedEnvelope(payload, (String) existingVector.get("signatureP1363Base64Url"));
+      assertThat(cryptoService.verifyEnvelope(existingEnv, existingPub)).isTrue();
+    }
     assertThat(Files.exists(signVerifyPath)).isTrue();
   }
 }
