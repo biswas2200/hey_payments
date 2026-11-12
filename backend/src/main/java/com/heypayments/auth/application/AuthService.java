@@ -128,7 +128,7 @@ public class AuthService {
     return new LoginResult(response, refreshToken);
   }
 
-  @Transactional
+  @Transactional(noRollbackFor = AuthTokenException.class)
   public LoginResult refresh(String rawRefreshToken) {
     if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
       throw new DomainException(ErrorCode.UNAUTHENTICATED, "Missing refresh token");
