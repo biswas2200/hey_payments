@@ -11,8 +11,11 @@ import {
   HttpErrorResponse,
   type HttpInterceptorFn,
 } from '@angular/common/http';
-import { Observable, catchError, switchMap, throwError, from } from 'rxjs';
+import { Observable, catchError, switchMap, throwError, from, shareReplay, finalize } from 'rxjs';
 import { AuthStore } from './auth.store';
+import type { TokenResponse } from '../api/models';
+
+let activeRefresh$: Observable<TokenResponse> | null = null;
 
 const PUBLIC_URL_PATTERNS = [
   '/auth/login',
@@ -52,7 +55,16 @@ export function authInterceptor(
         err.status === 401 &&
         !req.url.includes('/auth/refresh')
       ) {
-        return from(store.refreshSession()).pipe(
+        if (!activeRefresh$) {
+          activeRefresh$ = from(store.refreshSession()).pipe(
+            shareReplay(1),
+            finalize(() => {
+              activeRefresh$ = null;
+            }),
+          );
+        }
+
+        return activeRefresh$.pipe(
           switchMap((newTokenResp) => {
             const retriedReq = modifiedReq.clone({
               setHeaders: {
