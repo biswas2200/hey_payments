@@ -20,7 +20,7 @@ The reference CSS lives in `deck-source/style.css` (classes `.banner`, `.balcard
 
 ## 1. Brand
 - **Logo mark:** 64×64 rounded square (radius 20), gradient `--hp-grad-brand`, Lucide `wifi-off` glyph in `--hp-night`, stroke 2.4. Use the SVG as-is; never recolour it or redraw it in CSS.
-- **Wordmark:** `hey` + saffron `.` + `payments`, Space Grotesk 700. Light backgrounds use ink text (`logo-wordmark-light.svg`), dark backgrounds use white text (`-dark.svg`).
+- **Wordmark:** `hey` + saffron `.` + `payments`, Space Grotesk 700, **outlined to vector paths** (312×64), so it renders identically in `<img>`, offline and on any device. Light backgrounds use ink text (`logo-wordmark-light.svg`), dark backgrounds use white text (`-dark.svg`). To regenerate after a copy change, run `brand/outline-wordmark.js` (opentype.js + the Space Grotesk 700 woff).
 - **Clear space:** at least half the mark's height on every side. Minimum mark size: 24 px.
 - **Where:** splash/onboarding (mark 96 px), auth header (wordmark 32 px high), admin sidebar (wordmark, dark).
 
