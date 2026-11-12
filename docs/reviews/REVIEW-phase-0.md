@@ -1,3 +1,32 @@
+# Second re-review: Phase 0, 2026-11-13 (@ `95942de`)
+
+**Verdict: APPROVED, with one condition before merge.** Fix item C below on `phase/0-foundation` (it's one line), then merge to `main`, tag `v0.1.0`, set the GitHub default branch back to `main`, and start Phase 1 on `phase/1-auth-devices`.
+
+**Git:** `phase/0-foundation` local = origin = `95942de` (0/0); `main` = `2f91529` (0/0). Working tree clean.
+
+## Your claims, cross-verified (clean worktree at `95942de` plus the live stack)
+| Claim | Verified |
+|---|---|
+| A: random surefire order in `pom.xml`, Makefile, CI | ✅ `<runOrder>random</runOrder>` + `-Dsurefire.runOrder=random` in `make test-be` and CI |
+| A: singleton Testcontainer | ✅ `@Testcontainers`/`@Container` removed; started once in `static {}` with `@ServiceConnection` |
+| A: MDC isolation | ✅ `MDC.clear()` before and after in `GlobalExceptionHandlerTest`, `ProblemSecurityHandlersTest`, `RequestIdFilterTest` |
+| A: two consecutive random-order runs green | ✅ my own two runs: **50/50, 0 failures each**, `verify` (JaCoCo gate) green |
+| B: dark wordmark | ✅ both SVGs rendered, toggled by CSS for `prefers-color-scheme: dark` and `[data-theme='dark']` (and `data-theme='light'` overrides system dark). SVGs not recoloured. Visible in my own dark screenshot |
+| B: tests | ✅ 3/3 Playwright against the live stack (light, dark scheme, `data-theme="dark"`) plus updated unit spec |
+| SHOULD: screenshots to `test-results/` | ✅ after e2e, `git status` is clean; `docs/design/screenshots` updated only deliberately |
+| SHOULD: prod Redis password required | ⚠️ done in `application-prod.yml`, but not wired; see C |
+| Gates | ✅ frontend lint, format, 12/12 unit (lines 79.3%), e2e 3/3; backend verify ×2 |
+
+## C. [LOW, fix before merge] Prod profile can't start under compose
+`application-prod.yml` now requires `SPRING_DATA_REDIS_PASSWORD`, but `docker-compose.yml` only passes `REDIS_PASSWORD` to the backend. So `SPRING_PROFILE=prod make up` fails with an unresolved placeholder.
+**Fix:** in the compose `backend.environment`, set `SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}` (and keep `REDIS_PASSWORD` for the dev `application.yml`, or switch dev to the same name). **Test:** a CI step `SPRING_PROFILE=prod docker compose config` must succeed with `.env.example` values, and an `ApplicationContextRunner`/profile test that the prod context fails without the variable and starts with it.
+
+## Carry into Phase 1 (non-blocking)
+- **Architect action (mine):** the brand wordmark SVG uses live `<text>` in Space Grotesk. Inside `<img>` an SVG can't use page fonts, so it falls back to a system sans. I'll replace `docs/design/brand/logo-wordmark-*.svg` with outlined-path versions. When they land, copy them into `frontend/public/brand/` unchanged.
+- Phase 1 builds the auth screens. Use the components and tokens from `docs/design/ui-spec.md` and keep extending the smoke and visual tests.
+
+---
+
 # Re-review: Phase 0, 2026-11-12 23:20 IST (@ `95067b8`)
 
 **Verdict: CHANGES REQUIRED (2 small items).** All 6 original MUST-FIX items are fixed and verified. Two new defects block approval: a test suite that fails depending on run order, and an invisible logo in dark mode. Fix both test-first, then resubmit. I'll do a quick confirm, and Phase 0 can then be tagged `v0.1.0`, merged to `main`, and Phase 1 can start.
