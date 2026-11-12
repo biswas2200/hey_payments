@@ -147,8 +147,7 @@ class CryptoServiceTest {
     // 3. Coordinate point not on P-256 curve (x=1, y=1)
     byte[] oneByte = new byte[32];
     oneByte[31] = 0x01;
-    String oneCoord =
-        java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(oneByte);
+    String oneCoord = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(oneByte);
     assertThatThrownBy(() -> cryptoService.fromJwk(oneCoord, oneCoord))
         .isInstanceOf(CryptoException.class)
         .hasMessageContaining("curve");

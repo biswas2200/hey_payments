@@ -6,7 +6,6 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
@@ -28,10 +27,7 @@ public class OtpService {
   private record OtpEntry(String otp, Instant expiresAt, int failedAttempts) {}
 
   private final Cache<String, OtpEntry> otpStore =
-      Caffeine.newBuilder()
-          .expireAfterWrite(Duration.ofMinutes(10))
-          .maximumSize(10_000)
-          .build();
+      Caffeine.newBuilder().expireAfterWrite(Duration.ofMinutes(10)).maximumSize(10_000).build();
 
   public String generateAndSendOtp(String phone, String email) {
     int code = secureRandom.nextInt(1_000_000);
@@ -85,8 +81,7 @@ public class OtpService {
           MAX_FAILED_ATTEMPTS);
       otpStore.invalidate(phone);
     } else {
-      otpStore.put(
-          phone, new OtpEntry(entry.otp(), entry.expiresAt(), nextFailedAttempts));
+      otpStore.put(phone, new OtpEntry(entry.otp(), entry.expiresAt(), nextFailedAttempts));
     }
     return false;
   }

@@ -48,8 +48,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         && !path.startsWith("/swagger")
         && !path.startsWith("/v3/api-docs")) {
       // 120 requests per minute general
-      Bucket bucket =
-          generalBuckets.get(clientIp, k -> createBucket(120, Duration.ofMinutes(1)));
+      Bucket bucket = generalBuckets.get(clientIp, k -> createBucket(120, Duration.ofMinutes(1)));
       allowed = bucket.tryConsume(1);
     }
 

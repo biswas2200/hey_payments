@@ -174,7 +174,8 @@ class AuthControllerTest extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Refresh token reuse via /api/v1/auth/refresh must persist family revocation and reject rotated token")
+  @DisplayName(
+      "Refresh token reuse via /api/v1/auth/refresh must persist family revocation and reject rotated token")
   void shouldRevokeEntireTokenFamilyOnReuseViaController() throws Exception {
     String phone = "+919876543999";
     String password = "Password123!";
@@ -185,7 +186,8 @@ class AuthControllerTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     objectMapper.writeValueAsString(
-                        new RegisterRequest(phone, "reuse@example.com", password, "PAYER", "Tester"))))
+                        new RegisterRequest(
+                            phone, "reuse@example.com", password, "PAYER", "Tester"))))
         .andExpect(status().isCreated());
 
     String otp = otpService.getRecentOtpForPhone(phone);

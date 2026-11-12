@@ -38,8 +38,7 @@ class CryptoConfigTest {
   @DisplayName("application-prod.yml mandates HP_MASTER_KEY without default fallback")
   void applicationProdMustMandateHpMasterKeyWithoutDefault() {
     Yaml yaml = new Yaml();
-    try (InputStream in =
-        getClass().getClassLoader().getResourceAsStream("application-prod.yml")) {
+    try (InputStream in = getClass().getClassLoader().getResourceAsStream("application-prod.yml")) {
       assertThat(in).isNotNull();
       Map<String, Object> data = yaml.load(in);
       @SuppressWarnings("unchecked")

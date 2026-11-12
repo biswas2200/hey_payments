@@ -154,10 +154,7 @@ public class CryptoService {
     // Curve check: y^2 = x^3 + a*x + b (mod p)
     BigInteger lhs = y.modPow(BigInteger.valueOf(2), P256_P);
     BigInteger rhs =
-        x.modPow(BigInteger.valueOf(3), P256_P)
-            .add(P256_A.multiply(x))
-            .add(P256_B)
-            .mod(P256_P);
+        x.modPow(BigInteger.valueOf(3), P256_P).add(P256_A.multiply(x)).add(P256_B).mod(P256_P);
 
     if (!lhs.equals(rhs)) {
       throw new CryptoException("Point (x, y) is not on curve P-256");

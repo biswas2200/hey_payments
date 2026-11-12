@@ -103,13 +103,9 @@ public class AuthController {
   }
 
   private void setRefreshCookie(
-      HttpServletRequest request,
-      HttpServletResponse response,
-      String token,
-      Duration maxAge) {
+      HttpServletRequest request, HttpServletResponse response, String token, Duration maxAge) {
     boolean secure =
-        request.isSecure()
-            || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
+        request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
     ResponseCookie cookie =
         ResponseCookie.from(REFRESH_COOKIE_NAME, token)
             .httpOnly(true)

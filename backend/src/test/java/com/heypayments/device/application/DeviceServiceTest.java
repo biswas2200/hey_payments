@@ -200,7 +200,8 @@ class DeviceServiceTest {
             .status(DeviceStatus.ACTIVE)
             .lastCounter(0L)
             .build();
-    when(deviceRepository.findAllByUserId(merchantUserId)).thenReturn(List.of(activeMerchantDevice));
+    when(deviceRepository.findAllByUserId(merchantUserId))
+        .thenReturn(List.of(activeMerchantDevice));
     when(merchantService.findByUserId(merchantUserId))
         .thenReturn(
             Optional.of(
