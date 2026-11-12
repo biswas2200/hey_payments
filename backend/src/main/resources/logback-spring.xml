@@ -13,16 +13,4 @@
             <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>
-
-    <springProfile name="prod">
-        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-                <pattern>{"timestamp":"%d{yyyy-MM-dd'T'HH:mm:ss.SSS'Z',UTC}","level":"%p","thread":"%t","logger":"%logger","message":"%replace(%replace(%m){'[\r\n]+', ' '}){'\"', '\\\"'}","requestId":"%replace(%X{requestId}){'[\r\n\"\\\\]+', ''}","userId":"%replace(%X{userId}){'[\r\n\"\\\\]+', ''}","deviceId":"%replace(%X{deviceId}){'[\r\n\"\\\\]+', ''}"}%n</pattern>
-                <charset>UTF-8</charset>
-            </encoder>
-        </appender>
-        <root level="INFO">
-            <appender-ref ref="JSON_CONSOLE"/>
-        </root>
-    </springProfile>
 </configuration>
