@@ -2,12 +2,14 @@ package com.heypayments.auth.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.heypayments.auth.domain.service.PasswordHasher;
+import com.heypayments.auth.infra.security.Argon2PasswordHasher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class PasswordHasherTest {
 
-  private final PasswordHasher hasher = new PasswordHasher();
+  private final PasswordHasher hasher = new Argon2PasswordHasher();
 
   @Test
   @DisplayName("should hash and verify passwords using Argon2id")

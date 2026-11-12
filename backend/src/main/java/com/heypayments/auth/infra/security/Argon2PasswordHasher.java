@@ -6,14 +6,14 @@ import org.springframework.stereotype.Component;
 
 /**
  * Argon2id password and PIN hashing service using Spring Security Argon2PasswordEncoder.
- * Parameters: salt length 16 bytes, hash length 32 bytes, parallelism 1, memory 19 MiB (19456 KiB), 2 iterations.
+ * Parameters: salt length 16 bytes, hash length 32 bytes, parallelism 1, memory 19 MiB (19456 KiB),
+ * 2 iterations.
  */
 @Component
 public class Argon2PasswordHasher implements PasswordHasher {
 
   // m=19 MiB (19456 KiB), t=2, p=1, salt=16, hash=32
-  private final Argon2PasswordEncoder encoder =
-      new Argon2PasswordEncoder(16, 32, 1, 19456, 2);
+  private final Argon2PasswordEncoder encoder = new Argon2PasswordEncoder(16, 32, 1, 19456, 2);
 
   @Override
   public String hashPassword(String rawPassword) {

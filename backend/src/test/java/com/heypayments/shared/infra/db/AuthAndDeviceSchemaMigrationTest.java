@@ -7,6 +7,7 @@ import com.heypayments.BaseIntegrationTest;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class AuthAndDeviceSchemaMigrationTest extends BaseIntegrationTest {
 
   @Autowired private JdbcTemplate jdbcTemplate;
+
+  @AfterEach
+  void cleanUp() {
+    jdbcTemplate.execute("DELETE FROM server_keys");
+    jdbcTemplate.execute("DELETE FROM devices");
+    jdbcTemplate.execute("DELETE FROM merchants");
+    jdbcTemplate.execute("DELETE FROM refresh_tokens");
+    jdbcTemplate.execute("DELETE FROM users");
+  }
 
   @Test
   @DisplayName("V2 migration: users table enforces unique phone and cascading refresh_tokens")
@@ -111,7 +121,8 @@ class AuthAndDeviceSchemaMigrationTest extends BaseIntegrationTest {
 
     // First active device for PAYER kind
     UUID dev1 = UUID.randomUUID();
-    byte[] pubKey = new byte[] {0x04, 0x01, 0x02};
+    byte[] pubKey = new byte[65];
+    pubKey[0] = 0x04;
     jdbcTemplate.update(
         "INSERT INTO devices (id, user_id, kind, public_key, label, user_agent, status,"
             + " last_counter, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -126,7 +137,8 @@ class AuthAndDeviceSchemaMigrationTest extends BaseIntegrationTest {
         now,
         now);
 
-    // Second active device for SAME kind and user must fail unique partial index ux_device_active_user
+    // Second active device for SAME kind and user must fail unique partial index
+    // ux_device_active_user
     UUID dev2 = UUID.randomUUID();
     assertThatThrownBy(
             () ->
@@ -208,4 +220,3 @@ class AuthAndDeviceSchemaMigrationTest extends BaseIntegrationTest {
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 }
-

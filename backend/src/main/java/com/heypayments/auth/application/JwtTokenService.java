@@ -27,11 +27,7 @@ public class JwtTokenService {
   private final String kid;
   private final Clock clock;
 
-  public JwtTokenService(
-      ECPrivateKey privateKey,
-      ECPublicKey publicKey,
-      String kid,
-      Clock clock) {
+  public JwtTokenService(ECPrivateKey privateKey, ECPublicKey publicKey, String kid, Clock clock) {
     this.privateKey = privateKey;
     this.publicKey = publicKey;
     this.kid = kid;
@@ -44,10 +40,7 @@ public class JwtTokenService {
       Instant expiresAt = now.plusSeconds(ACCESS_TOKEN_VALIDITY_SECONDS);
 
       JWSHeader header =
-          new JWSHeader.Builder(JWSAlgorithm.ES256)
-              .keyID(kid)
-              .type(JOSEObjectType.JWT)
-              .build();
+          new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(kid).type(JOSEObjectType.JWT).build();
 
       JWTClaimsSet claimsSet =
           new JWTClaimsSet.Builder()
@@ -78,7 +71,8 @@ public class JwtTokenService {
       }
 
       JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
-      Instant exp = claimsSet.getExpirationTime() != null ? claimsSet.getExpirationTime().toInstant() : null;
+      Instant exp =
+          claimsSet.getExpirationTime() != null ? claimsSet.getExpirationTime().toInstant() : null;
       Instant now = clock.instant();
 
       if (exp == null || now.isAfter(exp)) {

@@ -47,8 +47,7 @@ class CryptoServiceTest {
     assertThat(envelope.p()).isEqualTo(payload);
     assertThat(envelope.s()).isNotBlank();
 
-    boolean valid =
-        cryptoService.verifyEnvelope(envelope, (ECPublicKey) keyPair.getPublic());
+    boolean valid = cryptoService.verifyEnvelope(envelope, (ECPublicKey) keyPair.getPublic());
     assertThat(valid).isTrue();
 
     // Tampering payload must fail verification

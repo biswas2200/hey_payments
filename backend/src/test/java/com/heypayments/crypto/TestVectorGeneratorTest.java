@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.heypayments.crypto.domain.CryptoService;
 import com.heypayments.crypto.domain.JcsCanonicalizer;
 import com.heypayments.crypto.domain.SignedEnvelope;
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,7 +52,8 @@ class TestVectorGeneratorTest {
                 "input", Map.of("msg", "Line 1\nLine 2\tTab \"Quotes\" \\ Backslash"),
                 "expected", "{\"msg\":\"Line 1\\nLine 2\\tTab \\\"Quotes\\\" \\\\ Backslash\"}"),
             Map.of(
-                "name", "money_voucher_payload",
+                "name",
+                "money_voucher_payload",
                 "input",
                 Map.of(
                     "v", 1,
@@ -97,7 +97,8 @@ class TestVectorGeneratorTest {
     assertThat(cryptoService.verifyEnvelope(envelope, pub)).isTrue();
 
     Map<String, Object> signVerifyData = new LinkedHashMap<>();
-    signVerifyData.put("description", "Cross-language ECDSA P-256 / SHA-256 / IEEE P1363 test vector");
+    signVerifyData.put(
+        "description", "Cross-language ECDSA P-256 / SHA-256 / IEEE P1363 test vector");
     signVerifyData.put("privateKeyPkcs8Base64", privPkcs8Base64);
     signVerifyData.put("publicKeySec1Base64Url", sec1Base64Url);
     signVerifyData.put("publicKeyJwk", jwk);

@@ -32,7 +32,9 @@ public class ServerKeyService {
   private final ServerKeyRepository serverKeyRepository;
   private final CryptoService cryptoService;
   private final Clock clock;
-  @Qualifier("serverMasterKey") private final byte[] masterKey;
+
+  @Qualifier("serverMasterKey")
+  private final byte[] masterKey;
 
   @Transactional
   public synchronized ServerKey getActiveSigningKey() {

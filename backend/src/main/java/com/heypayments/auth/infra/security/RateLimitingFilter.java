@@ -1,4 +1,4 @@
-package com.heypayments.shared.infra.security;
+package com.heypayments.auth.infra.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.heypayments.shared.domain.exception.ErrorCode;
@@ -40,32 +40,33 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     boolean allowed = true;
     if (path.contains("/auth/login") || path.contains("/auth/verify-otp")) {
       // 5 requests per minute per IP/phone
-      Bucket bucket = loginBuckets.computeIfAbsent(clientIp, k -> createBucket(5, Duration.ofMinutes(1)));
+      Bucket bucket =
+          loginBuckets.computeIfAbsent(clientIp, k -> createBucket(5, Duration.ofMinutes(1)));
       allowed = bucket.tryConsume(1);
-    } else if (!path.startsWith("/actuator") && !path.startsWith("/swagger") && !path.startsWith("/v3/api-docs")) {
+    } else if (!path.startsWith("/actuator")
+        && !path.startsWith("/swagger")
+        && !path.startsWith("/v3/api-docs")) {
       // 120 requests per minute general
-      Bucket bucket = generalBuckets.computeIfAbsent(clientIp, k -> createBucket(120, Duration.ofMinutes(1)));
+      Bucket bucket =
+          generalBuckets.computeIfAbsent(clientIp, k -> createBucket(120, Duration.ofMinutes(1)));
       allowed = bucket.tryConsume(1);
     }
 
     if (!allowed) {
-      log.warn("Rate limit exceeded for IP {} on {}", clientIp, path);
+      log.warn("Rate limit exceeded for path={} ip={}", path, clientIp);
       response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
       response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-
-      ErrorCode err = ErrorCode.RATE_LIMITED;
       ProblemResponse problem =
           new ProblemResponse(
-              err.getTypeUri(),
-              err.getTitle(),
+              "urn:problem:rate-limit-exceeded",
+              "Rate Limit Exceeded",
               HttpStatus.TOO_MANY_REQUESTS.value(),
-              err.name(),
+              ErrorCode.RATE_LIMITED.name(),
               "Too many requests. Please try again later.",
-              path,
-              "",
+              request.getRequestURI(),
+              null,
               Collections.emptyList());
-
-      response.getWriter().write(objectMapper.writeValueAsString(problem));
+      objectMapper.writeValue(response.getOutputStream(), problem);
       return;
     }
 
@@ -83,6 +84,11 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     if (xForwardedFor != null && !xForwardedFor.isBlank()) {
       return xForwardedFor.split(",")[0].trim();
     }
-    return request.getRemoteAddr() != null ? request.getRemoteAddr() : "127.0.0.1";
+    return request.getRemoteAddr();
+  }
+
+  public void reset() {
+    loginBuckets.clear();
+    generalBuckets.clear();
   }
 }

@@ -9,6 +9,8 @@ import com.heypayments.crypto.infra.persistence.ServerKeyRepository;
 import java.security.interfaces.ECPublicKey;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,12 @@ class ServerKeyServiceTest extends BaseIntegrationTest {
 
   @Autowired private ServerKeyService serverKeyService;
   @Autowired private ServerKeyRepository serverKeyRepository;
+
+  @BeforeEach
+  @AfterEach
+  void cleanUp() {
+    serverKeyRepository.deleteAll();
+  }
 
   @Test
   @DisplayName("should ensure active key exists, encrypt it at rest, and expose JWKS")

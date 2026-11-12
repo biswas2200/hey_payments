@@ -15,7 +15,6 @@ import com.heypayments.auth.application.AuthService;
 import com.heypayments.auth.application.OtpService;
 import com.heypayments.auth.web.dto.LoginRequest;
 import com.heypayments.auth.web.dto.RegisterRequest;
-import com.heypayments.auth.web.dto.VerifyOtpRequest;
 import com.heypayments.crypto.application.ServerKeyService;
 import com.heypayments.crypto.domain.CryptoService;
 import com.heypayments.crypto.domain.SignedEnvelope;
@@ -51,7 +50,8 @@ class DeviceControllerTest extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Payer device registration: registers active device and prevents duplicate active devices")
+  @DisplayName(
+      "Payer device registration: registers active device and prevents duplicate active devices")
   void shouldRegisterPayerDevice() throws Exception {
     String token = registerAndLogin("+919876500010", "PAYER", "Payer One");
 
@@ -100,8 +100,7 @@ class DeviceControllerTest extends BaseIntegrationTest {
 
     // 4. Close device
     mockMvc
-        .perform(
-            delete("/api/v1/devices/" + deviceId).header("Authorization", "Bearer " + token))
+        .perform(delete("/api/v1/devices/" + deviceId).header("Authorization", "Bearer " + token))
         .andExpect(status().isNoContent());
 
     // 5. Check CRL includes closed device
@@ -109,7 +108,8 @@ class DeviceControllerTest extends BaseIntegrationTest {
         .perform(get("/api/v1/devices/crl").header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.revoked").isArray())
-        .andExpect(jsonPath("$.revoked[?(@.deviceId == '" + deviceId + "')].status").value("CLOSED"));
+        .andExpect(
+            jsonPath("$.revoked[?(@.deviceId == '" + deviceId + "')].status").value("CLOSED"));
   }
 
   @Test

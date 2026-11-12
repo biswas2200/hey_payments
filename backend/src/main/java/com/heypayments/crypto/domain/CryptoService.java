@@ -78,7 +78,8 @@ public class CryptoService {
 
   public ECPublicKey fromUncompressedSec1(byte[] sec1) {
     if (sec1 == null || sec1.length != 65 || sec1[0] != 0x04) {
-      throw new CryptoException("Invalid uncompressed SEC1 point: expected 65 bytes starting with 0x04");
+      throw new CryptoException(
+          "Invalid uncompressed SEC1 point: expected 65 bytes starting with 0x04");
     }
     byte[] xBytes = Arrays.copyOfRange(sec1, 1, 33);
     byte[] yBytes = Arrays.copyOfRange(sec1, 33, 65);
@@ -143,7 +144,8 @@ public class CryptoService {
       signer.update(canonicalBytes);
       byte[] signatureBytes = signer.sign();
 
-      String signatureBase64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(signatureBytes);
+      String signatureBase64Url =
+          Base64.getUrlEncoder().withoutPadding().encodeToString(signatureBytes);
       return new SignedEnvelope(payload, signatureBase64Url);
     } catch (Exception e) {
       throw new CryptoException("Failed to sign envelope payload", e);
@@ -191,7 +193,8 @@ public class CryptoService {
         throw new CryptoException("Ciphertext payload too short for AES-GCM IV");
       }
       byte[] iv = Arrays.copyOfRange(cipherTextWithIv, 0, GCM_IV_LENGTH_BYTES);
-      byte[] cipherText = Arrays.copyOfRange(cipherTextWithIv, GCM_IV_LENGTH_BYTES, cipherTextWithIv.length);
+      byte[] cipherText =
+          Arrays.copyOfRange(cipherTextWithIv, GCM_IV_LENGTH_BYTES, cipherTextWithIv.length);
 
       Cipher cipher = Cipher.getInstance(AES_GCM_ALGORITHM);
       SecretKey key = new SecretKeySpec(masterKey, "AES");

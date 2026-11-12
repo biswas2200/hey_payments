@@ -11,9 +11,8 @@ import com.heypayments.auth.web.dto.RegisterRequest;
 import com.heypayments.auth.web.dto.TokenResponse;
 import com.heypayments.auth.web.dto.UserProfileResponse;
 import com.heypayments.auth.web.dto.UserSummaryDto;
-import com.heypayments.merchant.domain.model.MerchantStatus;
-import com.heypayments.merchant.infra.persistence.MerchantEntity;
-import com.heypayments.merchant.infra.persistence.MerchantRepository;
+import com.heypayments.merchant.application.MerchantService;
+import com.heypayments.merchant.domain.model.Merchant;
 import com.heypayments.shared.domain.exception.DomainException;
 import com.heypayments.shared.domain.exception.ErrorCode;
 import java.time.Clock;
@@ -30,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
   private final UserRepository userRepository;
-  private final MerchantRepository merchantRepository;
+  private final MerchantService merchantService;
   private final PasswordHasher passwordHasher;
   private final JwtTokenService jwtTokenService;
   private final RefreshTokenService refreshTokenService;
@@ -68,23 +67,11 @@ public class AuthService {
       String baseHandle =
           displayName.toLowerCase().replaceAll("[^a-z0-9]", ".").replaceAll("\\.+", ".");
       String handle = baseHandle + "@hey";
-      if (merchantRepository.existsByHandle(handle)) {
+      if (merchantService.existsByHandle(handle)) {
         handle = baseHandle + "." + userId.toString().substring(0, 4) + "@hey";
       }
 
-      MerchantEntity merchant =
-          MerchantEntity.builder()
-              .id(UUID.randomUUID())
-              .userId(userId)
-              .displayName(displayName)
-              .handle(handle)
-              .category("GENERAL")
-              .status(MerchantStatus.ACTIVE)
-              .pendingCap(1_000_000L) // ₹10,000 in paise
-              .createdAt(now)
-              .updatedAt(now)
-              .build();
-      merchantRepository.save(merchant);
+      merchantService.createMerchant(userId, displayName, handle, "GENERAL", 1_000_000L);
     }
 
     otpService.generateAndSendOtp(req.phone(), req.email());
@@ -124,7 +111,8 @@ public class AuthService {
 
     if (user.getStatus() != UserStatus.ACTIVE) {
       throw new DomainException(
-          ErrorCode.FORBIDDEN, "Account is not active or is locked. Please verify OTP or contact support.");
+          ErrorCode.FORBIDDEN,
+          "Account is not active or is locked. Please verify OTP or contact support.");
     }
 
     String displayName = resolveDisplayName(user);
@@ -135,9 +123,7 @@ public class AuthService {
 
     TokenResponse response =
         new TokenResponse(
-            accessToken,
-            900,
-            new UserSummaryDto(user.getId(), user.getRole().name(), displayName));
+            accessToken, 900, new UserSummaryDto(user.getId(), user.getRole().name(), displayName));
 
     return new LoginResult(response, refreshToken);
   }
@@ -165,9 +151,7 @@ public class AuthService {
 
     TokenResponse response =
         new TokenResponse(
-            accessToken,
-            900,
-            new UserSummaryDto(user.getId(), user.getRole().name(), displayName));
+            accessToken, 900, new UserSummaryDto(user.getId(), user.getRole().name(), displayName));
 
     return new LoginResult(response, rotatedRefreshToken);
   }
@@ -219,9 +203,9 @@ public class AuthService {
 
   private String resolveDisplayName(UserEntity user) {
     if (user.getRole() == UserRole.MERCHANT) {
-      return merchantRepository
+      return merchantService
           .findByUserId(user.getId())
-          .map(MerchantEntity::getDisplayName)
+          .map(Merchant::displayName)
           .orElse(user.getPhone());
     }
     return user.getPhone();

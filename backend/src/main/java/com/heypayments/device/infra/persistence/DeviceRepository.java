@@ -20,6 +20,9 @@ public interface DeviceRepository extends JpaRepository<DeviceEntity, UUID> {
   List<DeviceEntity> findAllByUserId(UUID userId);
 
   @Query(
-      "SELECT d FROM DeviceEntity d WHERE d.status IN ('FROZEN', 'REVOKED', 'CLOSED') AND (:since IS NULL OR d.updatedAt >= :since)")
+      "SELECT d FROM DeviceEntity d WHERE d.status IN ('FROZEN', 'REVOKED', 'CLOSED') AND d.updatedAt >= :since")
   List<DeviceEntity> findRevokedDevicesSince(@Param("since") Instant since);
+
+  @Query("SELECT d FROM DeviceEntity d WHERE d.status IN ('FROZEN', 'REVOKED', 'CLOSED')")
+  List<DeviceEntity> findAllRevokedDevices();
 }

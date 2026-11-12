@@ -12,8 +12,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Implementation of RFC 8785 JSON Canonicalization Scheme (JCS).
- * Produces deterministic, canonical UTF-8 JSON byte streams for cryptographic signing.
+ * Implementation of RFC 8785 JSON Canonicalization Scheme (JCS). Produces deterministic, canonical
+ * UTF-8 JSON byte streams for cryptographic signing.
  */
 public class JcsCanonicalizer {
 

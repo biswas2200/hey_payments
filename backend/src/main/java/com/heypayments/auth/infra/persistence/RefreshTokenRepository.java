@@ -17,6 +17,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity
   List<RefreshTokenEntity> findAllByFamilyId(UUID familyId);
 
   @Modifying
-  @Query("UPDATE RefreshTokenEntity r SET r.revokedAt = CURRENT_TIMESTAMP WHERE r.familyId = :familyId AND r.revokedAt IS NULL")
+  @Query(
+      "UPDATE RefreshTokenEntity r SET r.revokedAt = CURRENT_TIMESTAMP WHERE r.familyId = :familyId AND r.revokedAt IS NULL")
   int revokeAllByFamilyId(@Param("familyId") UUID familyId);
 }

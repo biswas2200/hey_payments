@@ -53,7 +53,8 @@ class DeviceRepositoryTest extends BaseIntegrationTest {
     deviceRepository.save(device);
 
     Optional<DeviceEntity> activeDevice =
-        deviceRepository.findByUserIdAndKindAndStatus(userId, DeviceKind.PAYER, DeviceStatus.ACTIVE);
+        deviceRepository.findByUserIdAndKindAndStatus(
+            userId, DeviceKind.PAYER, DeviceStatus.ACTIVE);
     assertThat(activeDevice).isPresent();
     assertThat(activeDevice.get().getId()).isEqualTo(devId);
     assertThat(activeDevice.get().getLabel()).isEqualTo("Pixel 8");

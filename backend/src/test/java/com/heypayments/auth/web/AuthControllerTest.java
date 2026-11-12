@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.heypayments.BaseIntegrationTest;
 import com.heypayments.auth.application.OtpService;
+import com.heypayments.auth.infra.security.RateLimitingFilter;
 import com.heypayments.auth.web.dto.LoginRequest;
 import com.heypayments.auth.web.dto.RegisterRequest;
 import com.heypayments.auth.web.dto.SetPinRequest;
@@ -31,17 +32,20 @@ class AuthControllerTest extends BaseIntegrationTest {
 
   @Autowired private WebApplicationContext context;
   @Autowired private OtpService otpService;
+  @Autowired private RateLimitingFilter rateLimitingFilter;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private MockMvc mockMvc;
 
   @BeforeEach
   void setUp() {
+    rateLimitingFilter.reset();
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
   }
 
   @Test
-  @DisplayName("Full auth lifecycle: register -> verify OTP -> login -> me -> refresh -> set PIN -> logout")
+  @DisplayName(
+      "Full auth lifecycle: register -> verify OTP -> login -> me -> refresh -> set PIN -> logout")
   void shouldCompleteFullAuthLifecycle() throws Exception {
     String phone = "+919876500001";
     String password = "SecurePassword123!";
@@ -80,7 +84,7 @@ class AuthControllerTest extends BaseIntegrationTest {
             post("/api/v1/auth/verify-otp")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(verifyOtpRequest)))
-            .andExpect(status().isOk());
+        .andExpect(status().isOk());
 
     // 4. Login after verification
     MvcResult loginResult =
@@ -104,9 +108,7 @@ class AuthControllerTest extends BaseIntegrationTest {
 
     // 5. GET /users/me
     mockMvc
-        .perform(
-            get("/api/v1/users/me")
-                .header("Authorization", "Bearer " + accessToken))
+        .perform(get("/api/v1/users/me").header("Authorization", "Bearer " + accessToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.phone").value(phone))
         .andExpect(jsonPath("$.role").value("PAYER"));
@@ -114,9 +116,7 @@ class AuthControllerTest extends BaseIntegrationTest {
     // 6. Refresh token rotation
     MvcResult refreshResult =
         mockMvc
-            .perform(
-                post("/api/v1/auth/refresh")
-                    .cookie(refreshCookie))
+            .perform(post("/api/v1/auth/refresh").cookie(refreshCookie))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.accessToken").exists())
             .andExpect(cookie().exists("hp_rt"))
@@ -137,17 +137,13 @@ class AuthControllerTest extends BaseIntegrationTest {
 
     // 8. Logout
     mockMvc
-        .perform(
-            post("/api/v1/auth/logout")
-                .cookie(rotatedCookie))
+        .perform(post("/api/v1/auth/logout").cookie(rotatedCookie))
         .andExpect(status().isNoContent())
         .andExpect(cookie().maxAge("hp_rt", 0));
 
     // After logout, refreshed cookie is invalid
     mockMvc
-        .perform(
-            post("/api/v1/auth/refresh")
-                .cookie(rotatedCookie))
+        .perform(post("/api/v1/auth/refresh").cookie(rotatedCookie))
         .andExpect(status().isUnauthorized());
   }
 
