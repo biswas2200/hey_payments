@@ -23,6 +23,13 @@ public class GlobalExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+  /**
+   * Translates domain business exceptions into RFC 9457 Problem Details.
+   *
+   * @param ex the domain exception thrown by service or domain logic
+   * @param request the current HTTP servlet request
+   * @return HTTP problem details response
+   */
   @ExceptionHandler(DomainException.class)
   public ResponseEntity<ProblemResponse> handleDomainException(
       DomainException ex, HttpServletRequest request) {
@@ -49,6 +56,13 @@ public class GlobalExceptionHandler {
         .body(body);
   }
 
+  /**
+   * Translates validation failures into 400 VALIDATION_FAILED Problem Details.
+   *
+   * @param ex the method argument validation exception
+   * @param request the current HTTP servlet request
+   * @return HTTP problem details response
+   */
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ProblemResponse> handleValidationException(
       MethodArgumentNotValidException ex, HttpServletRequest request) {
@@ -84,6 +98,13 @@ public class GlobalExceptionHandler {
         .body(body);
   }
 
+  /**
+   * Translates unhandled unexpected exceptions into generic 500 INTERNAL Problem Details.
+   *
+   * @param ex the unhandled unexpected exception
+   * @param request the current HTTP servlet request
+   * @return HTTP problem details response
+   */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemResponse> handleGenericException(
       Exception ex, HttpServletRequest request) {

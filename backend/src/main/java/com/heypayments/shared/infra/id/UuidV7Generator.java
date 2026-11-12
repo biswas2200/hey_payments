@@ -15,6 +15,11 @@ public final class UuidV7Generator {
     // Utility class
   }
 
+  /**
+   * Generates a new random time-ordered UUIDv7.
+   *
+   * @return non-null UUIDv7
+   */
   public static UUID generate() {
     long timestamp = System.currentTimeMillis();
 
@@ -30,6 +35,12 @@ public final class UuidV7Generator {
     return new UUID(mostSigBits, leastSigBits);
   }
 
+  /**
+   * Extracts the millisecond epoch timestamp embedded in the given UUIDv7.
+   *
+   * @param uuid the UUIDv7 instance
+   * @return millisecond epoch timestamp
+   */
   public static long extractTimestamp(UUID uuid) {
     if (uuid == null) {
       throw new IllegalArgumentException("UUID cannot be null");

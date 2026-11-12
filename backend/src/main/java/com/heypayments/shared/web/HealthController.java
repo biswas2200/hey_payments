@@ -7,10 +7,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/** Health check controller exposing basic service status. */
 @RestController
 @RequestMapping("/api")
 public class HealthController {
 
+  /**
+   * Returns the service health status and current timestamp.
+   *
+   * @return response entity with status map
+   */
   @GetMapping("/health")
   public ResponseEntity<Map<String, Object>> healthCheck() {
     return ResponseEntity.ok(

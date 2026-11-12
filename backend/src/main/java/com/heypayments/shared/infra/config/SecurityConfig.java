@@ -8,10 +8,18 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
+/** Base Spring Security filter chain configuration. */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+  /**
+   * Configures stateless HTTP security with public endpoints for health and documentation.
+   *
+   * @param http the HttpSecurity builder
+   * @return configured SecurityFilterChain
+   * @throws Exception if configuration fails
+   */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
