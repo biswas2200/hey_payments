@@ -1,5 +1,6 @@
 package com.heypayments;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 
@@ -8,6 +9,8 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * ArchUnit structural and architectural rule enforcement. Enforces domain purity, forbidden field
@@ -54,4 +57,18 @@ class ArchitectureRulesTest {
           .dependOnClassesThat()
           .resideInAnyPackage("..web..", "..infra..")
           .as("Domain layer must not depend on web or infra layers");
+
+  @ArchTest
+  static final ArchRule controllerMethodsMustBeSecured =
+      methods()
+          .that()
+          .areDeclaredInClassesThat()
+          .areAnnotatedWith(RestController.class)
+          .and()
+          .arePublic()
+          .should()
+          .beAnnotatedWith(PreAuthorize.class)
+          .as(
+              "Every public endpoint method in a @RestController must be explicitly secured with"
+                  + " @PreAuthorize");
 }
