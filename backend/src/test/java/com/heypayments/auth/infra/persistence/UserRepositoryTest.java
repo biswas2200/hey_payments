@@ -79,12 +79,8 @@ class UserRepositoryTest extends BaseIntegrationTest {
     assertThat(found).isPresent();
     assertThat(found.get().getFamilyId()).isEqualTo(familyId);
 
-    // Rotate: revoke token1 and issue token2 in same family
-    token1.setRevokedAt(Instant.now());
+    // Rotate: save token2 in same family first, then link token1.replacedBy to token2
     UUID tokenId2 = UUID.randomUUID();
-    token1.setReplacedBy(tokenId2);
-    refreshTokenRepository.save(token1);
-
     RefreshTokenEntity token2 =
         RefreshTokenEntity.builder()
             .id(tokenId2)
@@ -95,6 +91,10 @@ class UserRepositoryTest extends BaseIntegrationTest {
             .createdAt(Instant.now())
             .build();
     refreshTokenRepository.save(token2);
+
+    token1.setRevokedAt(Instant.now());
+    token1.setReplacedBy(tokenId2);
+    refreshTokenRepository.save(token1);
 
     List<RefreshTokenEntity> familyTokens = refreshTokenRepository.findAllByFamilyId(familyId);
     assertThat(familyTokens).hasSize(2);
