@@ -1,6 +1,7 @@
 package com.heypayments.device.application;
 
 import com.heypayments.crypto.application.ServerKeyService;
+import com.heypayments.crypto.domain.CryptoException;
 import com.heypayments.crypto.domain.CryptoService;
 import com.heypayments.crypto.domain.SignedEnvelope;
 import com.heypayments.device.domain.model.DeviceKind;
@@ -50,8 +51,15 @@ public class DeviceService {
           ErrorCode.VALIDATION_FAILED, "publicKeyJwk must contain x and y coordinates");
     }
 
-    ECPublicKey pubKey = cryptoService.fromJwk(jwk.get("x"), jwk.get("y"));
-    byte[] sec1Bytes = cryptoService.toUncompressedSec1(pubKey);
+    ECPublicKey pubKey;
+    byte[] sec1Bytes;
+    try {
+      pubKey = cryptoService.fromJwk(jwk.get("x"), jwk.get("y"));
+      sec1Bytes = cryptoService.toUncompressedSec1(pubKey);
+    } catch (CryptoException | IllegalArgumentException e) {
+      throw new DomainException(
+          ErrorCode.VALIDATION_FAILED, "Invalid EC public key coordinates: " + e.getMessage());
+    }
 
     DeviceKind kind = DeviceKind.valueOf(roleName);
     Optional<DeviceEntity> activeDevice =

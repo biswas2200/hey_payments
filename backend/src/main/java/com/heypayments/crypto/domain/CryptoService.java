@@ -33,6 +33,13 @@ public class CryptoService {
   private static final int GCM_TAG_LENGTH_BITS = 128;
   private static final int COORD_BYTE_LENGTH = 32;
 
+  private static final BigInteger P256_P =
+      new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF", 16);
+  private static final BigInteger P256_A =
+      new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC", 16);
+  private static final BigInteger P256_B =
+      new BigInteger("5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B", 16);
+
   private final JcsCanonicalizer jcs;
   private final SecureRandom secureRandom;
   private final ECParameterSpec ecParameterSpec;
@@ -112,11 +119,50 @@ public class CryptoService {
   }
 
   public ECPublicKey fromJwk(String xBase64Url, String yBase64Url) {
-    byte[] xBytes = Base64.getUrlDecoder().decode(xBase64Url);
-    byte[] yBytes = Base64.getUrlDecoder().decode(yBase64Url);
+    if (xBase64Url == null || xBase64Url.isBlank() || yBase64Url == null || yBase64Url.isBlank()) {
+      throw new CryptoException("JWK x and y coordinates are missing or blank");
+    }
+
+    byte[] xBytes;
+    byte[] yBytes;
+    try {
+      xBytes = Base64.getUrlDecoder().decode(xBase64Url);
+      yBytes = Base64.getUrlDecoder().decode(yBase64Url);
+    } catch (IllegalArgumentException e) {
+      throw new CryptoException("Invalid base64url encoding for JWK coordinates", e);
+    }
+
+    if (xBytes.length != COORD_BYTE_LENGTH || yBytes.length != COORD_BYTE_LENGTH) {
+      throw new CryptoException(
+          "Invalid JWK coordinate lengths: expected 32 bytes each, got x="
+              + xBytes.length
+              + " y="
+              + yBytes.length);
+    }
 
     BigInteger x = new BigInteger(1, xBytes);
     BigInteger y = new BigInteger(1, yBytes);
+
+    // Range check: 0 <= x < p, 0 <= y < p
+    if (x.compareTo(BigInteger.ZERO) < 0
+        || x.compareTo(P256_P) >= 0
+        || y.compareTo(BigInteger.ZERO) < 0
+        || y.compareTo(P256_P) >= 0) {
+      throw new CryptoException("JWK coordinates out of field range [0, p-1]");
+    }
+
+    // Curve check: y^2 = x^3 + a*x + b (mod p)
+    BigInteger lhs = y.modPow(BigInteger.valueOf(2), P256_P);
+    BigInteger rhs =
+        x.modPow(BigInteger.valueOf(3), P256_P)
+            .add(P256_A.multiply(x))
+            .add(P256_B)
+            .mod(P256_P);
+
+    if (!lhs.equals(rhs)) {
+      throw new CryptoException("Point (x, y) is not on curve P-256");
+    }
+
     ECPoint w = new ECPoint(x, y);
 
     try {
