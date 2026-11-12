@@ -56,6 +56,7 @@ describe('AuthStore', () => {
         publicKeyJwk: { kty: 'EC', crv: 'P-256', x: 'x1', y: 'y1' },
         createdAt: '2026-11-12T10:00:00Z',
       }),
+      updateDeviceId: vi.fn().mockResolvedValue(undefined),
       clearKeys: vi.fn().mockResolvedValue(undefined),
     };
 
@@ -83,8 +84,10 @@ describe('AuthStore', () => {
     await store.login({ phone: '+919876543210', password: 'Password123!' });
 
     expect(apiMock.login).toHaveBeenCalled();
+    expect(apiMock.getMyDevice).toHaveBeenCalled();
     expect(store.accessToken()).toBe('mock-jwt-token-xyz');
     expect(store.currentUser()).toEqual(mockUserProfile);
+    expect(store.activeDevice()).toEqual(mockDeviceResponse);
     expect(store.isAuthenticated()).toBe(true);
     expect(store.isPayer()).toBe(true);
     expect(store.isMerchant()).toBe(false);
@@ -150,7 +153,7 @@ describe('AuthStore', () => {
     expect(store.error()).toBe('Invalid OTP code');
   });
 
-  it('should register current device using non-extractable key from KeyService', async () => {
+  it('should register current device using non-extractable key from KeyService and sync deviceId', async () => {
     await store.registerCurrentDevice('My Pixel Phone');
 
     expect(keyServiceMock.getOrCreateDeviceKey).toHaveBeenCalled();
@@ -159,6 +162,10 @@ describe('AuthStore', () => {
       label: 'My Pixel Phone',
       userAgent: expect.any(String),
     });
+    expect(keyServiceMock.updateDeviceId).toHaveBeenCalledWith(
+      'dev-1',
+      mockDeviceResponse.deviceId,
+    );
     expect(store.activeDevice()).toEqual(mockDeviceResponse);
   });
 
@@ -188,8 +195,8 @@ describe('AuthStore', () => {
   });
 
   it('should set payment PIN', async () => {
-    await store.setPin('123456');
-    expect(apiMock.setPin).toHaveBeenCalledWith({ pin: '123456' });
+    await store.setPin('123456', 'Password123!');
+    expect(apiMock.setPin).toHaveBeenCalledWith({ pin: '123456', password: 'Password123!' });
   });
 
   it('should handle setPin error', async () => {
@@ -197,17 +204,17 @@ describe('AuthStore', () => {
       throwError(() => ({ error: { detail: 'Weak PIN' } })),
     );
 
-    await expect(store.setPin('000000')).rejects.toBeDefined();
+    await expect(store.setPin('000000', 'Password123!')).rejects.toBeDefined();
     expect(store.error()).toBe('Weak PIN');
   });
 
-  it('should clear tokens, state, and keys on logout', async () => {
+  it('should clear tokens and user session on logout while preserving device keys', async () => {
     await store.login({ phone: '+919876543210', password: 'Password123!' });
     expect(store.isAuthenticated()).toBe(true);
 
     await store.logout();
     expect(apiMock.logout).toHaveBeenCalled();
-    expect(keyServiceMock.clearKeys).toHaveBeenCalled();
+    expect(keyServiceMock.clearKeys).not.toHaveBeenCalled();
     expect(store.currentUser()).toBeNull();
     expect(store.accessToken()).toBeNull();
     expect(store.isAuthenticated()).toBe(false);

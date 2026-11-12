@@ -51,4 +51,16 @@ describe('KeyService', () => {
     await keyService.clearKeys();
     expect(await keyService.getActiveKey()).toBeNull();
   });
+
+  it('should update deviceId when server assigns a permanent UUID', async () => {
+    await keyService.getOrCreateDeviceKey('temp-local-id');
+    expect(await db.keys.get('temp-local-id')).toBeDefined();
+
+    await keyService.updateDeviceId('temp-local-id', 'server-assigned-uuid');
+    expect(await db.keys.get('temp-local-id')).toBeUndefined();
+    const updated = await db.keys.get('server-assigned-uuid');
+    expect(updated).toBeDefined();
+    expect(updated?.deviceId).toBe('server-assigned-uuid');
+    expect(updated?.privateKey.extractable).toBe(false);
+  });
 });

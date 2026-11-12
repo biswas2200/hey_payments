@@ -188,6 +188,42 @@ class DeviceServiceTest {
     assertThat(resp.deviceId()).isEqualTo(active.getId());
     assertThat(resp.lastCounter()).isEqualTo(5L);
 
+    // Active merchant device should return populated merchant certificate
+    UUID merchantUserId = UUID.randomUUID();
+    DeviceEntity activeMerchantDevice =
+        DeviceEntity.builder()
+            .id(UUID.randomUUID())
+            .userId(merchantUserId)
+            .kind(DeviceKind.MERCHANT)
+            .publicKeySec1(new byte[65])
+            .status(DeviceStatus.ACTIVE)
+            .lastCounter(0L)
+            .build();
+    when(deviceRepository.findAllByUserId(merchantUserId)).thenReturn(List.of(activeMerchantDevice));
+    when(merchantService.findByUserId(merchantUserId))
+        .thenReturn(
+            Optional.of(
+                new Merchant(
+                    UUID.randomUUID(),
+                    merchantUserId,
+                    "My Shop",
+                    "myshop@hey",
+                    "GENERAL",
+                    com.heypayments.merchant.domain.model.MerchantStatus.ACTIVE,
+                    100000L,
+                    now,
+                    now)));
+    when(serverKeyService.getActiveSigningKey())
+        .thenReturn(
+            new ServerKey(
+                "srv-1", new byte[0], new byte[0], ServerKeyStatus.ACTIVE, now, now, now));
+    when(serverKeyService.signEnvelope(any()))
+        .thenReturn(new SignedEnvelope(Map.of("t", "MC"), "mc-signature"));
+
+    DeviceResponse merchantResp = deviceService.getActiveDevice(merchantUserId);
+    assertThat(merchantResp.merchantCertificate()).isNotNull();
+    assertThat(merchantResp.merchantCertificate().s()).isEqualTo("mc-signature");
+
     // CRL with and without since
     DeviceEntity revoked =
         DeviceEntity.builder()
