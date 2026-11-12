@@ -43,6 +43,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-change-me}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
     depends_on:
       postgres:

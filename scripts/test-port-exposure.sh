@@ -4,23 +4,24 @@ set -euo pipefail
 # Verifies per docs/reviews/REVIEW-phase-0.md MUST-FIX 3 that only frontend publishes on 0.0.0.0.
 # All internal services (postgres, redis, mailpit, backend) must bind strictly to 127.0.0.1 loopback.
 
-COMPOSE_CONFIG=$(docker compose config)
+ENV_ARGS=()
+if [ -f .env ]; then
+  ENV_ARGS=(--env-file .env)
+elif [ -f .env.example ]; then
+  ENV_ARGS=(--env-file .env.example)
+fi
+
+COMPOSE_CONFIG=$(docker compose "${ENV_ARGS[@]}" config)
+
+export COMPOSE_CONFIG
 
 # Extract any service publishing ports without 127.0.0.1 (excluding frontend)
 # Format in compose config is host_ip: 127.0.0.1 or published: "..." with host_ip: 127.0.0.1
 VIOLATIONS=$(python3 - << 'EOF'
-import sys, subprocess, yaml
+import os, sys, yaml
 
-try:
-    res = subprocess.run(["docker", "compose", "config", "--format", "json"], capture_output=True, text=True, check=True)
-    import json
-    data = json.loads(res.stdout)
-except Exception:
-    res = subprocess.run(["docker", "compose", "config"], capture_output=True, text=True, check=True)
-    import yaml
-    data = yaml.safe_load(res.stdout)
-
-services = data.get("services", {})
+data = yaml.safe_load(os.environ.get("COMPOSE_CONFIG", ""))
+services = data.get("services", {}) if data else {}
 violations = []
 
 for svc_name, svc_cfg in services.items():
