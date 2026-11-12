@@ -37,7 +37,7 @@ interface SignVerifyVector {
 }
 
 describe('Frontend Crypto & Shared Test Vectors', () => {
-  const rootDir = path.resolve(__dirname, '../../../../../test-vectors');
+  const rootDir = path.resolve(process.cwd(), '../test-vectors');
   const jcsVectors: JcsVector[] = JSON.parse(
     fs.readFileSync(path.join(rootDir, 'jcs.json'), 'utf-8'),
   );
@@ -68,6 +68,29 @@ describe('Frontend Crypto & Shared Test Vectors', () => {
       expect(canonicalize(input)).toBe(
         '{"arr":[null,true,false,0,-42,3.1415],"str":"hello \\"world\\" \\n"}',
       );
+    });
+
+    it('should serialize -0 as 0 and throw for non-finite numbers', () => {
+      expect(canonicalize(-0)).toBe('0');
+      expect(() => canonicalize(NaN)).toThrow(TypeError);
+      expect(() => canonicalize(Infinity)).toThrow(TypeError);
+    });
+
+    it('should handle undefined and functions in arrays and objects', () => {
+      const fn = () => {};
+      const sym = Symbol('test');
+      expect(canonicalize([undefined, fn, sym, 1])).toBe('[null,null,null,1]');
+      expect(canonicalize({ a: undefined, b: fn, c: sym, d: 'keep' })).toBe('{"d":"keep"}');
+    });
+
+    it('should throw TypeError for unsupported types', () => {
+      expect(() => canonicalize(123n)).toThrow(TypeError);
+      expect(() => canonicalize(Symbol('root'))).toThrow(TypeError);
+    });
+
+    it('should properly order surrogate pairs and astral code points', () => {
+      const input = { '𐐷': 1, 'a': 2, 'z': 3 };
+      expect(canonicalize(input)).toBe('{"a":2,"z":3,"𐐷":1}');
     });
   });
 
@@ -149,6 +172,13 @@ describe('Frontend Crypto & Shared Test Vectors', () => {
       };
       const invalid = await verifyEnvelope(tamperedEnvelope, keyPair.publicKey);
       expect(invalid).toBe(false);
+
+      // Verify invalid base64 signature returns false gracefully
+      const malformedEnvelope = {
+        p: payload,
+        s: 'not-a-valid-base64!',
+      };
+      expect(await verifyEnvelope(malformedEnvelope, keyPair.publicKey)).toBe(false);
     });
 
     it('should compute SHA-256 hex correctly', async () => {
