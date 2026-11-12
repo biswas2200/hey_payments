@@ -1,3 +1,8 @@
+# Environment & secrets
+.env
+.env.local
+certs/
+
 # OS and editor files
 .DS_Store
 Thumbs.db
@@ -9,11 +14,20 @@ Thumbs.db
 
 # Backend (Maven / Java)
 backend/target/
+target/
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/*.log
+*.log
 
 # Frontend (Angular / Node)
 frontend/node_modules/
+node_modules/
 frontend/dist/
+dist/
 frontend/.angular/
+.angular/
 frontend/*.log
+
+# E2E & reports
+e2e/test-results/
+e2e/playwright-report/
