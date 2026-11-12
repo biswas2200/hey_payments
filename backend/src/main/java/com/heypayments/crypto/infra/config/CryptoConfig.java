@@ -23,9 +23,7 @@ public class CryptoConfig {
   }
 
   @Bean(name = "serverMasterKey")
-  public byte[] serverMasterKey(
-      @Value("${hp.master-key:${HP_MASTER_KEY:dev-master-key-seed-32-bytes-long!}}")
-          String rawMasterKey) {
+  public byte[] serverMasterKey(@Value("${hp.master-key}") String rawMasterKey) {
     try {
       // If it is valid base64 and decodes to 32 bytes, use directly
       byte[] decoded = Base64.getDecoder().decode(rawMasterKey);

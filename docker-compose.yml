@@ -47,6 +47,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
       SPRING_MAIL_HOST: mailpit
       SPRING_MAIL_PORT: 1025
+      HP_MASTER_KEY: ${HP_MASTER_KEY:?HP_MASTER_KEY must be set}
     depends_on:
       postgres:
         condition: service_healthy

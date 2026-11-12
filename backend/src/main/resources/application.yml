@@ -37,3 +37,6 @@ management:
   health:
     mail:
       enabled: false
+
+hp:
+  master-key: ${HP_MASTER_KEY:dev-master-key-seed-32-bytes-long!}
