@@ -5,7 +5,7 @@
 - **Status always visible:** a global connectivity + sync banner (`Online · Synced`, `Offline · 3 pending`, `Syncing…`).
 - **Signals for state**, standalone components, `OnPush` everywhere, lazy-loaded feature routes, typed reactive forms.
 - **Accessible by default:** WCAG 2.2 AA (see §8).
-- **Design from Canva:** tokens and screens in `docs/design/` are the visual source of truth.
+- **Design:** `docs/design/ui-spec.md`, `docs/design/reference/` and `docs/design/tokens.scss` are the approved visual source of truth (Calm Ledger v1). Fonts self-hosted, icons via `lucide-angular`.
 
 ## 2. Folder structure
 ```
@@ -34,7 +34,7 @@ frontend/src/
       merchant/              pos (keypad → PR QR → scan voucher → success), today, settlements, profile
       admin/                 dashboard (KPIs, charts), users, devices, ledger, reconciliation, fraud cases
   styles/
-    tokens.scss              CSS custom properties from Canva (color, type, spacing, radius, motion, elevation)
+    _tokens.scss             copied verbatim from docs/design/tokens.scss (--hp-* custom properties)
     themes/                  light, dark, high-contrast
   ngsw-config.json
   manifest.webmanifest

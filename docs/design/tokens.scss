@@ -1,0 +1,114 @@
+// Hey Payments design tokens, "Calm Ledger" v1
+// Copy to frontend/src/styles/_tokens.scss and @use it from styles.scss.
+// Values are identical to docs/design/tokens.json and the reference screens (docs/design/reference/).
+// Do not invent new colours: add a token here (via a proposal) first.
+
+:root {
+  // ---- colour: surfaces & text ----
+  --hp-bg: #F7F5F0;          // paper, page background
+  --hp-surface: #FFFFFF;     // cards, sheets, keypad keys
+  --hp-surface-alt: #EFEBE3; // tracks, chips, subtle fills
+  --hp-ink: #0E1B2C;         // primary text, phone frame
+  --hp-ink-2: #334155;       // secondary text
+  --hp-muted: #5B6576;       // labels, captions (>= 4.5:1 on bg)
+  --hp-line: #E2DED5;        // dividers, card borders
+  --hp-border-strong: #6B7280; // input borders (>= 3:1)
+
+  // ---- colour: brand ----
+  --hp-primary: #0F766E;     // teal: buttons, links, focus accents
+  --hp-on-primary: #FFFFFF;
+  --hp-primary-2: #14B8A6;   // bullets, charts
+  --hp-primary-soft: #D5F5EF; // tinted panels, icon chips
+  --hp-mint: #2DD4BF;        // logo gradient start, dark-mode primary
+  --hp-accent: #F5A524;      // saffron: hero CTA "Pay without internet", key numbers
+  --hp-on-accent: #0E1B2C;
+  --hp-accent-soft: #FDEFD3;
+  --hp-night: #0B1420;       // dark surfaces (merchant summary card, admin sidebar)
+  --hp-night-2: #132033;
+
+  // ---- colour: status language (always pair with icon + label) ----
+  --hp-offline: #4338CA;  --hp-offline-soft: #E0E7FF;   // icon: wifi-off
+  --hp-pending: #B45309;  --hp-pending-soft: #FEF3C7;   // icon: refresh-cw
+  --hp-settled: #15803D;  --hp-settled-soft: #DCFCE7;   // icon: circle-check
+  --hp-failed:  #B91C1C;  --hp-failed-soft:  #FEE2E2;   // icon: circle-x
+
+  --hp-focus: #2563EB;
+
+  // ---- gradients ----
+  --hp-grad-brand: linear-gradient(135deg, #2DD4BF, #0F766E);   // logo mark, app icon
+  --hp-grad-balance: linear-gradient(135deg, #0F766E, #0B4F4A); // offline balance card
+  --hp-grad-night: linear-gradient(135deg, #132033, #0B1420);   // merchant takings card
+
+  // ---- typography ----
+  --hp-font-display: 'Space Grotesk', system-ui, sans-serif;   // headings, ALL money amounts
+  --hp-font-body: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+  --hp-font-mono: 'JetBrains Mono', ui-monospace, monospace;   // receipt codes, ids
+  // mobile type scale (px), from the reference screens
+  --hp-fs-amount-hero: 48px;  // confirm/receipt amount, weight 700
+  --hp-fs-amount-lg: 34px;    // balance card amount
+  --hp-fs-title: 19px;        // screen title, weight 800
+  --hp-fs-body: 15px;
+  --hp-fs-small: 13px;
+  --hp-fs-label: 11px;        // UPPERCASE labels, weight 800, letter-spacing .12em
+  --hp-lh-tight: 1.1;
+  --hp-lh-body: 1.45;
+
+  // ---- spacing (4-pt grid) ----
+  --hp-space-1: 4px;  --hp-space-2: 8px;  --hp-space-3: 12px; --hp-space-4: 16px;
+  --hp-space-5: 24px; --hp-space-6: 32px; --hp-space-7: 48px; --hp-space-8: 64px;
+  --hp-screen-pad: 18px;      // horizontal padding of mobile screens
+
+  // ---- radius ----
+  --hp-r-sm: 12px;   // keypad keys, banners, chips
+  --hp-r-md: 16px;   // buttons, list rows
+  --hp-r-lg: 20px;   // balance card, QR container
+  --hp-r-xl: 26px;   // desktop cards
+  --hp-r-pill: 999px;
+
+  // ---- elevation ----
+  --hp-shadow-1: 0 1px 2px rgba(14, 27, 44, .06);
+  --hp-shadow-2: 0 1px 2px rgba(14, 27, 44, .06), 0 12px 32px rgba(14, 27, 44, .07);
+  --hp-shadow-3: 0 30px 60px rgba(14, 27, 44, .28);
+
+  // ---- motion ----
+  --hp-dur-instant: 100ms; --hp-dur-fast: 160ms; --hp-dur-base: 240ms; --hp-dur-slow: 400ms; --hp-dur-success: 600ms;
+  --hp-ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --hp-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --hp-ease-exit: cubic-bezier(.3, 0, 1, 1);
+
+  // ---- sizing ----
+  --hp-touch: 44px;          // minimum touch target
+  --hp-key-h: 44px;          // keypad key height
+  --hp-btn-h: 48px;
+}
+
+// Dark theme (system preference unless user forces light)
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --hp-bg: #0B1420; --hp-surface: #132033; --hp-surface-alt: #1B2A40;
+    --hp-ink: #E8EEF5; --hp-ink-2: #C9D4E2; --hp-muted: #94A3B8; --hp-line: #22324A; --hp-border-strong: #64748B;
+    --hp-primary: #2DD4BF; --hp-on-primary: #0B1420; --hp-primary-soft: #134E4A;
+    --hp-offline: #A5B4FC; --hp-offline-soft: #1E1B4B;
+    --hp-pending: #FBBF24; --hp-pending-soft: #3A2A0A;
+    --hp-settled: #4ADE80; --hp-settled-soft: #0F2E1C;
+    --hp-failed: #F87171;  --hp-failed-soft: #3B1111;
+    --hp-focus: #93C5FD;
+  }
+}
+:root[data-theme='dark'] {
+  --hp-bg: #0B1420; --hp-surface: #132033; --hp-surface-alt: #1B2A40;
+  --hp-ink: #E8EEF5; --hp-ink-2: #C9D4E2; --hp-muted: #94A3B8; --hp-line: #22324A; --hp-border-strong: #64748B;
+  --hp-primary: #2DD4BF; --hp-on-primary: #0B1420; --hp-primary-soft: #134E4A;
+  --hp-offline: #A5B4FC; --hp-offline-soft: #1E1B4B;
+  --hp-pending: #FBBF24; --hp-pending-soft: #3A2A0A;
+  --hp-settled: #4ADE80; --hp-settled-soft: #0F2E1C;
+  --hp-failed: #F87171;  --hp-failed-soft: #3B1111;
+  --hp-focus: #93C5FD;
+}
+
+// Large-text mode (Settings → Accessibility)
+:root[data-text='large'] { font-size: 130%; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --hp-dur-fast: 0ms; --hp-dur-base: 0ms; --hp-dur-slow: 0ms; --hp-dur-success: 120ms; }
+}

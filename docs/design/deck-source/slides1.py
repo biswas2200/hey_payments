@@ -19,23 +19,6 @@ def s01():
 <div style="position:absolute;right:0;top:120px;transform:rotate(8deg) scale(.9)">{phone(scr_merchant_ok())}</div>
 <div style="position:absolute;left:195px;top:40px">{phone(scr_confirm())}</div></div></section>'''
 
-def s02():
-    units = [
-        ("I", "UX Fundamentals & Research", ["UI vs UX", "Principles of good design", "Key elements of UX", "UX design process", "Design sprint", "Research plan & methods", "Bias, enquiry & insights"], "05–11"),
-        ("II", "Personas, Interaction & Wireframes", ["Personas", "Empathy map", "Pain points & user stories", "Problem & hypothesis", "Ideation & design specs", "Competitive audit", "Journey map · Interaction design", "User flow, storyboard, wireframes", "Deceptive patterns"], "13–24"),
-        ("III", "Visual Design, Accessibility & Testing", ["Visual design system", "Accessibility (WCAG, ADA)", "Usability testing", "A/B testing"], "26–29"),
-        ("IV", "Hi-fi Prototype & Evolving UX", ["Payer hi-fi screens", "Offline handshake", "Merchant & admin", "Gestures & motion", "Maintaining & evolving UX"], "31–35"),
-        ("V", "Product Management & Analytics", ["Product vision & PM role", "PRD, Lean, Scrum, Kanban", "Market, roadmap & MVP", "HEART & AARRR metrics"], "37–40"),
-    ]
-    cols = "".join(f'''<div class="card" style="display:flex;flex-direction:column;padding:28px 26px;{"background:var(--ink);color:#fff" if i==0 else ""}">
-<div style="display:flex;justify-content:space-between;align-items:baseline"><div class="big" style="font-size:64px;color:{"var(--saff)" if i==0 else "var(--teal)"};line-height:1">{u}</div><div class="tag" style="background:{"rgba(45,212,191,.15)" if i==0 else "var(--tealsoft)"};color:{"var(--mint)" if i==0 else "var(--teal)"}">Slides {sl}</div></div>
-<h3 style="margin-top:12px;font-size:25px;{"color:#fff" if i==0 else ""}">{t}</h3>
-<ul style="margin-top:8px;gap:6px">{"".join(f'<li style="font-size:20px;{"color:#C9D4E2" if i==0 else ""}">{x}</li>' for x in items)}</ul>
-<div style="margin-top:auto;padding-top:16px;border-top:1px dashed {"rgba(255,255,255,.2)" if i==0 else "var(--line)"};font-size:17px;font-weight:700;color:{"var(--saff)" if i==0 else "var(--teal)"}">{hrs}</div></div>''' for i,((u,t,items,sl),hrs) in enumerate(zip(units,["8 hrs · research artefacts","8 hrs · personas → wireframes","8 hrs · visual system & tests","8 hrs · hi-fi prototype","8 hrs · PRD & metrics"])))
-    body = f'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:22px;height:100%">{cols}</div>'
-    return slide(2, "Agenda", "Syllabus <em>map</em>", "Every unit of the syllabus is applied to one real product: what we did in Hey Payments, plus the method and source behind it.", body,
-                 "All units (I–V), mapped to slides", "Each slide's ribbon cites its source. [R1]–[R31] are listed on slide 41", "docs/design/README.md")
-
 def s03():
     steps = [("wifi", "1 · Load (online)", "Move up to ₹2,000 from the wallet into an offline balance. The server signs a balance certificate for this phone.", "ok"),
              ("qr-code", "2 · Pay (offline)", "Merchant shows a signed QR, payer confirms with PIN and shows a signed voucher, merchant shows a receipt. No network needed.", "off"),
@@ -68,7 +51,7 @@ def divider(n, unit, title_, topics, art):
 <div style="position:absolute;right:110px;bottom:80px;z-index:2;font-size:18px;color:#8DA0B8">{art}</div></section>'''
 
 def s04():
-    return divider(4, "I", "UX fundamentals, process &amp; research", ["UI vs UX in Hey Payments", "Principles of good design", "Key elements of UX", "Our UX design process", "Design sprint (5 days)", "UX research plan", "Bias, enquiry &amp; actionable insights"], "Syllabus Unit I · 8 hours")
+    return divider(4, "I", "UX fundamentals, process &amp; research", ["UI vs UX in Hey Payments", "Principles of good design", "Key elements of UX", "Our UX design process", "Design sprint (5 days)", "UX research plan", "Bias, enquiry &amp; actionable insights", "Market research"], "Section 1 of 5 · slides 05–12")
 
 def s05():
     ph = phone(scr_confirm())
@@ -124,10 +107,10 @@ def s07():
                  "Key Elements of UX", "Morville's UX Honeycomb (2004) [R4]", "docs/01-PRD.md §3 Goals")
 
 def s08():
-    S = [("search", "Research", "Interviews · survey · contextual enquiry · competitive audit", "Slides 10–11, 19", "Discover"),
-         ("pen-tool", "Design", "Personas · journey map · user flows · paper and Figma wireframes", "Slides 13–24", "Define"),
-         ("layers", "Prototype", "Clickable Figma lo-fi, then hi-fi built from design tokens", "Slides 31–34", "Develop"),
-         ("flask-conical", "Test", "Moderated usability (n=5, SUS) · A/B test on CTA label", "Slides 28–29", "Develop"),
+    S = [("search", "Research", "Interviews · survey · contextual enquiry · competitive audit", "Slides 10–12, 20", "Discover"),
+         ("pen-tool", "Design", "Personas · journey map · user flows · paper and Figma wireframes", "Slides 14–25", "Define"),
+         ("layers", "Prototype", "Clickable Figma lo-fi, then hi-fi built from design tokens", "Slides 32–35", "Develop"),
+         ("flask-conical", "Test", "Moderated usability (n=5, SUS) · A/B test on CTA label", "Slides 29–30", "Develop"),
          ("rocket", "Implement", "tokens.json → Angular PWA · TDD · handoff via AGENTS.md", "docs/09, docs/12", "Deliver")]
     cards = "".join(f'''<div class="card" style="flex:1;display:flex;flex-direction:column;{"background:var(--ink);color:#fff" if i==4 else ""}">
 <div class="row" style="justify-content:space-between"><div class="ic {"s" if i==4 else ""}">{I(ic)}</div><span class="big" style="font-size:40px;color:{"var(--saff)" if i==4 else "var(--line)"}">0{i+1}</span></div>
@@ -142,7 +125,7 @@ def s08():
 def s09():
     D = [("Mon", "Understand", "Map the offline payment journey, interview 2 experts, choose a target moment: paying in a zero-signal queue.", "Long-term goal + sprint questions"),
          ("Tue", "Sketch", "Lightning demos of UPI Lite X and boarding-pass QR codes, then Crazy 8s and solution sketches.", "8 sketches → 3 concepts"),
-         ("Wed", "Decide", "Dot voting chose the 'QR handshake + receipt' concept. Built a 12-panel storyboard.", "Storyboard (slide 22)"),
+         ("Wed", "Decide", "Dot voting chose the 'QR handshake + receipt' concept. Built a 12-panel storyboard.", "Storyboard (slide 23)"),
          ("Thu", "Prototype", "Clickable Figma prototype of payer and merchant with realistic ₹ amounts.", "Figma prototype"),
          ("Fri", "Test", "5 users (2 shopkeepers, 3 students) completed the offline payment with think-aloud.", "Findings → backlog")]
     cols = "".join(f'''<div class="card" style="display:flex;flex-direction:column;padding:0;overflow:hidden">
@@ -190,7 +173,7 @@ def s11():
                  "Bias in UX research · Areas of enquiry · Translating research into actionable insights", "Google UX Certificate, research bias module [R8] · NN/g [R7]", "docs/01-PRD.md §2 Problem", extra=SAMPLE)
 
 def s12():
-    return divider(12, "II", "Personas, interaction design &amp; wireframes", ["Personas: Ravi, Priya, Arjun", "Empathy map", "Pain points, user stories &amp; scenarios", "Problem &amp; hypothesis statements", "Ideation &amp; design specifications", "Competitive audit", "Journey map &amp; interaction design", "User flow, storyboard &amp; wireframes", "Avoiding deceptive patterns"], "Syllabus Unit II · 8 hours")
+    return divider(12, "II", "Personas, interaction design &amp; wireframes", ["Personas: Ravi, Priya, Arjun", "Empathy map", "Pain points, user stories &amp; scenarios", "Problem &amp; hypothesis statements", "Ideation &amp; design specifications", "Competitive audit", "Journey map &amp; interaction design", "User flow, storyboard &amp; wireframes", "Avoiding deceptive patterns"], "Section 2 of 5 · slides 14–25")
 
 def avatar(init, c1, c2, size=150):
     return f'''<div style="width:{size}px;height:{size}px;border-radius:50%;background:linear-gradient(135deg,{c1},{c2});display:grid;place-items:center;position:relative;flex:none">
@@ -224,3 +207,51 @@ def s14():
 {pc("A","#0F766E","#14B8A6","Arjun Kulkarni","20 · Engineering student · hostel","Secondary persona · Payer",["Small payments at canteen and xerox shop","Keep track of a tight budget","No awkward moments at the counter"],["Hostel Wi-Fi drops constantly","Embarrassed retrying in front of friends","Older phone, little storage"],"I hate trying again while everyone watches.","offline balance meter with 'valid 3 days', discreet error recovery.")}</div>'''
     return slide(14, U2, "Personas · <em>Priya &amp; Arjun</em>", "Two payer personas with different contexts but one shared need: certainty at the counter.", body,
                  "Creating a Persona · Using Personas in the Design Process", "Cooper [R9] · Google UX Certificate persona template [R8]", "docs/01-PRD.md §4 Personas")
+
+def s02():
+    P = [("01", "Discover", "search", "Is this a real problem worth solving?", ["Problem framing", "Design principles", "UX process &amp; 5-day sprint", "User research plan", "Market research", "Insights → actions"], "03 – 12"),
+         ("02", "Define", "target", "Who exactly are we designing for?", ["3 personas", "Empathy map", "Pain points &amp; user stories", "Problem + hypothesis", "Ideation &amp; specs", "Competitive audit"], "14 – 20"),
+         ("03", "Design", "pen-tool", "What does the experience look like?", ["Journey map", "Interaction &amp; user flows", "Paper → Figma wireframes", "Ethical design", "Calm Ledger visual system", "Accessible hi-fi screens"], "21 – 28 · 32 – 35"),
+         ("04", "Validate", "flask-conical", "Does it actually work for people?", ["Usability test (n=5, SUS)", "A/B test on CTA label", "Post-launch feedback loop", "Analytics-led iteration"], "29 – 30 · 36"),
+         ("05", "Deliver &amp; grow", "rocket", "How do we ship it and measure it?", ["Vision &amp; PM role", "PRD, Lean, Scrum, Kanban", "Roadmap &amp; MVP", "HEART &amp; AARRR metrics"], "38 – 41")]
+    cols = ""
+    for i,(num,t,ic,q,items,sl) in enumerate(P):
+        hi = i == 2
+        cols += f'''<div class="card" style="padding:26px 24px;{"background:var(--ink);color:#fff" if hi else ""}">
+<div class="row" style="justify-content:space-between;align-items:center"><div class="ic {"s" if hi else ""}" style="margin:0">{I(ic)}</div><span class="big" style="font-size:46px;color:{"var(--saff)" if hi else "var(--line)"}">{num}</span></div>
+<h3 style="margin-top:14px;font-size:31px;{"color:#fff" if hi else ""}">{t}</h3>
+<div style="font-size:19px;font-style:italic;color:{"var(--mint)" if hi else "var(--teal)"};font-weight:600;line-height:1.3;min-height:50px">{q}</div>
+<ul style="margin-top:10px;gap:4px">{"".join(f'<li style="font-size:19.5px;{"color:#C9D4E2" if hi else ""}">{x}</li>' for x in items)}</ul>
+<div style="margin-top:12px;padding-top:12px;border-top:1px dashed {"rgba(255,255,255,.2)" if hi else "var(--line)"};font-size:16px;font-weight:800;letter-spacing:.06em;color:{"var(--saff)" if hi else "var(--ink2)"}">SLIDES {sl}</div></div>'''
+    rail = "".join(f'<div style="flex:1;height:8px;border-radius:6px;background:{c}"></div>' for c in ["#14B8A6", "#0F766E", "#F5A524", "#4338CA", "#15803D"])
+    out = "".join(f'<div style="display:flex;align-items:center;gap:12px"><i data-lucide="{ic}" style="width:26px;height:26px;color:var(--teal)"></i><span style="font-size:19px;font-weight:700">{t}</span></div>' for ic,t in [("file-text","PRD &amp; specs"),("palette","tokens.json design system"),("smartphone","Hi-fi screens"),("pencil-ruler","Excalidraw wireframes"),("bot","AGENTS.md dev handoff")])
+    body = f'''<div style="display:flex;flex-direction:column;gap:18px;height:100%"><div style="display:flex;gap:10px">{rail}</div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:20px;flex:1">{cols}</div>
+<div class="card tint" style="flex-direction:row;align-items:center;justify-content:space-between;padding:16px 28px"><span class="kicker">Handed to engineering</span>{out}</div></div>'''
+    return slide(2, "Case study roadmap", "How this case study <em>unfolds</em>", "Five phases took Hey Payments from a failed payment in a basement to a product we can build and measure.", body,
+                 "Overview of the end-to-end UX &amp; product process", "Design Council Double Diamond [R6] · Cagan, Inspired [R25]", "docs/00-README.md · docs/12-implementation-plan.md")
+
+def s11m():
+    sig = [("trending-up", "16.7 bn", "UPI transactions in Dec 2024", "NPCI monthly statistics"),
+           ("scale", "2022", "RBI framework allows offline small-value payments with caps", "RBI circular, 3 Jan 2022"),
+           ("store", "~1.2 cr", "kirana stores across India (industry estimate)", "Industry reports"),
+           ("nfc", "NFC only", "UPI Lite X offline needs NFC hardware, which many budget phones lack", "NPCI product docs")]
+    sc = "".join(f'''<div style="display:flex;gap:16px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 18px"><div class="ic" style="margin:0;width:52px;height:52px">{I(ic)}</div>
+<div><div class="big" style="font-size:32px;color:var(--teal);line-height:1">{v}</div><div style="font-size:18.5px;color:var(--ink);font-weight:600;line-height:1.3;margin-top:4px">{d}</div><div style="font-size:14px;color:var(--muted);margin-top:2px">{src}</div></div></div>''' for ic,v,d,src in sig)
+    funnel = "".join(f'''<div style="width:{w}%;margin:0 auto;background:{bg};color:{fg};border-radius:16px;padding:14px 18px;text-align:center"><div class="big" style="font-size:28px">{t}</div><div style="font-size:17px;line-height:1.3">{d}</div></div>''' for t,d,w,bg,fg in [
+        ("TAM", "Small merchants accepting QR payments in India", 100, "#0F766E", "#fff"),
+        ("SAM", "Those in low-connectivity spots: basements, transit, rural markets (assumed ~20%)", 84, "#14B8A6", "#0E1B2C"),
+        ("SOM", "Year-1 pilot: 5,000 merchants in 2 cities", 62, "#F5A524", "#0E1B2C")])
+    act = [("Zero-MDR norm on UPI merchant payments", "Merchant fee kept only in the simulation. Real revenue model: bank / issuer partnership"),
+           ("Competitor offline relies on NFC", "QR-only handshake works on any camera phone"),
+           ("Regulator caps offline amounts", "₹500 per payment and ₹2,000 balance limits built into the UI")]
+    ac = "".join(f'<div style="display:grid;grid-template-columns:1fr 34px 1fr;gap:10px;align-items:center;background:rgba(255,255,255,.05);border-radius:14px;padding:14px 16px"><span style="font-size:18.5px;color:#C9D4E2;line-height:1.35">{a}</span><span style="color:var(--saff)">{I("arrow-right")}</span><span style="font-size:18.5px;color:#fff;font-weight:700;line-height:1.35">{b}</span></div>' for a,b in act)
+    body = f'''<div style="display:grid;grid-template-columns:1fr .95fr 1.1fr;gap:24px;height:100%">
+<div class="card"><h4>Market signals · desk research</h4><div class="grow" style="gap:12px">{sc}</div></div>
+<div class="card"><h4>Market sizing · TAM → SAM → SOM</h4><div class="grow" style="gap:14px">{funnel}</div>
+<div style="font-size:17px;color:var(--ink2);background:var(--paper);border-radius:12px;padding:12px 14px;margin-top:10px"><b>Methods:</b> desk research · regulation scan · competitor &amp; pricing scan · campus survey</div></div>
+<div class="card dark"><h4>Market insight → product decision</h4><div class="grow" style="gap:14px">{ac}</div>
+<p style="font-size:18px;margin-top:12px">Market research runs next to user research. Users tell us what hurts, and the market tells us what can sustainably work.</p></div></div>'''
+    extra = '<div class="sample">Desk-research figures · verify sources before submission</div>'
+    return slide(11, U1, "Market <em>research</em>", "Before designing screens we checked demand, regulation, competitors and money: will this survive outside the classroom?", body,
+                 "Market research for UX · Competitive &amp; market analysis", "NPCI statistics [R27] · RBI framework [R26] · Cagan, Inspired [R25]", "docs/01-PRD.md §2, §9", extra=extra)

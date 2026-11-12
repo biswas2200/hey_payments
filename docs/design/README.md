@@ -1,11 +1,13 @@
 # Design: UI/UX case study (Canva) and tokens
 
+> **Frontend devs start here:** [ui-spec.md](ui-spec.md) → [reference/screens.html](reference/screens.html) → [tokens.scss](tokens.scss) → [brand/](brand/) → [wireframes/](wireframes/).
+
 - **Canva case study:** see [canva-link.md](canva-link.md) (link + PDF in `export/`).
 - **Tokens:** [`tokens.json`](tokens.json) is the machine-readable source for `frontend/src/styles/tokens.scss`.
 - Visual identity: **"Calm Ledger"**. Warm paper background, deep ink text, teal trust colour, saffron accent for primary moments (amounts, success), and a four-colour status language: **Offline (indigo) · Pending sync (amber) · Settled (green) · Failed (red)**, always shown as icon + label + colour.
 - Type: Space Grotesk (display/amounts), Inter + Noto Sans Devanagari (body, Hindi support), JetBrains Mono (hashes/ids).
 
-## Syllabus → case-study page map
+## Syllabus → case-study page map (internal checklist; the deck itself no longer shows a syllabus map)
 | Unit | Topic | Case-study section |
 |---|---|---|
 | I | Difference between UI and UX | 02 UI vs UX |

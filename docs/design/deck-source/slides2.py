@@ -172,7 +172,7 @@ def s24():
                  "Avoiding deceptive patterns", "Brignull, deceptive.design [R13]", "AGENTS.md §10 UI rules")
 
 def s25():
-    return divider(25, "III", "Visual design, accessibility &amp; testing", ["Visual design system: Calm Ledger", "Accessibility: WCAG 2.2 AA &amp; ADA", "Usability testing", "A/B testing"], "Syllabus Unit III · 8 hours")
+    return divider(25, "III", "Visual design, accessibility &amp; testing", ["Visual design system: Calm Ledger", "Accessibility: WCAG 2.2 AA &amp; ADA", "Usability testing", "A/B testing"], "Section 3 of 5 · slides 27–30")
 
 def s26():
     sw = [("Paper", "#F7F5F0", "Background", "var(--ink)"), ("Ink", "#0E1B2C", "Text · 15.9:1", "#fff"), ("Trust teal", "#0F766E", "Primary · 5.0:1", "#fff"), ("Saffron", "#F5A524", "Accent · CTA", "var(--ink)"), ("Mint", "#2DD4BF", "Dark-mode primary", "var(--ink)")]

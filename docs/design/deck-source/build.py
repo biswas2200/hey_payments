@@ -1,12 +1,22 @@
-import sys, importlib, importlib.util
+import sys, re, importlib, importlib.util
 sys.path.insert(0, '.')
 mods = [m for m in ['slides1', 'slides2', 'slides3'] if importlib.util.find_spec(m)]
 fns = []
 for m in mods:
     mod = importlib.import_module(m)
-    fns += sorted([getattr(mod, f) for f in dir(mod) if f.startswith('s') and f[1:].isdigit()], key=lambda f: int(f.__name__[1:]))
+    fns += [getattr(mod, f) for f in dir(mod) if re.fullmatch(r's\d+[a-z]?', f)]
+def key(f):
+    m = re.fullmatch(r's(\d+)([a-z]?)', f.__name__); return (int(m.group(1)), m.group(2))
+fns.sort(key=key)
 only = set(int(x) for x in sys.argv[1].split(',')) if len(sys.argv) > 1 and sys.argv[1] else None
-html_slides = [f() for f in fns if not only or int(f.__name__[1:]) in only]
+from parts import TOTAL
+html_slides = []
+for seq, f in enumerate(fns, 1):
+    h = f()
+    h = re.sub(r'data-n="\d+"', f'data-n="{seq}"', h, count=1)
+    h = re.sub(r'<b>\d+/\d+</b>', f'<b>{seq:02d}/{TOTAL}</b>', h, count=1)
+    if not only or seq in only: html_slides.append(h)
+print('functions:', len(fns))
 
 QRJS = r'''
 function rng(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return((h>>>0)%1000)/1000}}

@@ -27,7 +27,7 @@ def s29():
                  "Principles of A/B Testing · Designing and Running A/B Tests · Using results to improve UX", "Kohavi et al., Trustworthy Online Controlled Experiments [R18]", "docs/01-PRD.md §8 (Activation)", extra=SAMPLE)
 
 def s30():
-    return divider(30, "IV", "High-fidelity prototype &amp; evolving UX", ["Payer app: hi-fi screens", "The offline handshake, end to end", "Merchant POS &amp; admin console", "Gestures, motion &amp; accessibility", "Maintaining &amp; evolving UX"], "Syllabus Unit IV · 8 hours")
+    return divider(30, "IV", "High-fidelity prototype &amp; evolving UX", ["Payer app: hi-fi screens", "The offline handshake, end to end", "Merchant POS &amp; admin console", "Gestures, motion &amp; accessibility", "Maintaining &amp; evolving UX"], "Section 4 of 5 · slides 32–36")
 
 def s31():
     labels = [("Home", "Offline balance, honest status, saffron CTA"), ("Load offline", "Clear cap, quick amounts, numeric keypad"), ("Confirm + PIN", "Verified merchant, hero amount, 44px keys"), ("Receipt", "Proof + code, 'Pending sync', next step")]
@@ -104,7 +104,7 @@ def s35():
                  "Continuous UX improvement · Post-launch feedback · Iterating with analytics", "Torres, Continuous Discovery Habits [R30] · Ries, Lean Startup [R22]", "docs/12-implementation-plan.md Phase 8.5", extra=SAMPLE)
 
 def s36():
-    return divider(36, "V", "Product management &amp; analytics", ["Product vision, strategy &amp; the PM role", "PRD, Lean, Scrum &amp; Kanban", "Market analysis, roadmap &amp; MVP", "Product analytics: HEART &amp; AARRR"], "Syllabus Unit V · 8 hours")
+    return divider(36, "V", "Product management &amp; analytics", ["Product vision, strategy &amp; the PM role", "PRD, Lean, Scrum &amp; Kanban", "Market analysis, roadmap &amp; MVP", "Product analytics: HEART &amp; AARRR"], "Section 5 of 5 · slides 38–41")
 
 def s37():
     pil = [("shield-check", "Trust", "Signed proof · honest states · safe limits"), ("zap", "Speed", "<10 s handshake · 3 taps · auto-sync"), ("users", "Inclusion", "Any phone · offline · Hindi · AA")]

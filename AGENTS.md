@@ -12,7 +12,7 @@ Read these in order at the start of **every** session, and re-read the relevant 
 3. `docs/03-offline-protocol.md` (the protocol; never improvise crypto or rules)
 4. The doc(s) relevant to your current task (architecture, data model, API, frontend, testing, devops)
 5. `docs/PROGRESS.md` and the latest `docs/reviews/REVIEW-phase-*.md` (what is done, what must be fixed)
-6. `docs/design/` (UI source of truth from Canva) for any UI work
+6. `docs/design/ui-spec.md` + `docs/design/reference/` (approved UI source of truth) for any UI work
 
 **The docs are the spec. Do not edit files in `docs/` (except `PROGRESS.md` and `reviews/AGENT-REVIEW-*`).** If the spec is wrong, unclear or impossible, write `docs/proposals/NNN-short-title.md` (problem, options, recommendation), then stop and ask.
 
@@ -107,7 +107,12 @@ And confirm the **Global Definition of Done** in `docs/12-implementation-plan.md
 ```
 
 ## 10. UI/UX rules
-- Follow `docs/design/` (Canva case study + `tokens.json`) exactly for colours, type scale, spacing, radius, motion and component anatomy. If a screen isn't designed, compose it from existing components and note it in PROGRESS.md.
+- **The approved design is Calm Ledger v1.** The product owner signed off on the look and the logo. Your Angular screens must look like `docs/design/reference/screens/*.png`, built with the components and tokens in `docs/design/ui-spec.md` and `docs/design/tokens.scss`.
+- Use the logo and app icons from `docs/design/brand/` as files. Never redraw, recolour or "improve" them.
+- Do not introduce new colours, fonts, radii or shadows. Add a token through a proposal first. No UI kit (Material, PrimeNG, Bootstrap). Use the Angular CDK for behaviour only.
+- Fonts are self-hosted (`@fontsource`), icons via `lucide-angular`. The app must render correctly offline.
+- Every reference screen you implement gets a Playwright visual test (`toHaveScreenshot`, 390×844, seeded demo data). Put a side-by-side screenshot in the phase's PROGRESS entry.
+- For a screen with no reference, compose it from existing components and list it in PROGRESS.md for review.
 - WCAG 2.2 AA: contrast, focus visible, labels, 44 px targets, status = icon + text + colour, `prefers-reduced-motion`, screen-reader announcements for payment results.
 - **No deceptive patterns:** no pre-ticked consents, no hidden fees (show the merchant fee in the merchant UI), no confirmshaming, easy unload of offline balance, clear cancel on every step.
 - Use the three-state status language everywhere: **Offline · Pending sync · Settled** (plus Failed/Held).

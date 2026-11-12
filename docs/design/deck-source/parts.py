@@ -1,5 +1,5 @@
 # Shared building blocks for the Hey Payments deck
-TOTAL = 42
+TOTAL = 43
 
 def I(name, cls=""):
     return f'<i data-lucide="{name}" class="{cls}"></i>'
@@ -12,7 +12,7 @@ def title(h, sub=""):
     return f'<div class="ttl"><h1>{h}</h1>{f"<p>{sub}</p>" if sub else ""}</div>'
 
 def ref(syl, method, artefact):
-    return f'''<div class="ref"><div><span>Syllabus topic</span>{syl}</div>
+    return f'''<div class="ref"><div><span>Topic covered</span>{syl}</div>
 <div><span>Method / source used</span>{method}</div>
 <div><span>Project artefact</span><code>{artefact}</code></div></div>'''
 

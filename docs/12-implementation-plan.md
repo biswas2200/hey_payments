@@ -66,15 +66,18 @@ Work **one phase at a time**. Each phase ends at a **gate**: Definition of Done 
 
 **Acceptance:** load moves main→escrow and returns a BC that verifies on the client; caps enforced; unload returns the remainder; the expiry sweep works with a fake clock.
 
-## Phase 4: Design system and app shell (from Canva)
+## Phase 4: Design system and app shell (Calm Ledger v1, approved)
+**Inputs (read all before starting):** `docs/design/ui-spec.md`, `docs/design/reference/screens.html` (open it in a browser), `docs/design/reference/screens/*.png`, `docs/design/tokens.scss`, `docs/design/brand/`, `docs/design/wireframes/`.
 | # | Task |
 |---|---|
-| 4.1 | Import Canva tokens into `styles/tokens.scss` (light/dark/high-contrast) |
-| 4.2 | Build `shared/ui` components with Storybook-style demo route `/dev/ui` (dev only) and unit + axe tests |
-| 4.3 | Apply the design to existing screens (onboarding, auth, payer home); i18n en/hi scaffold; reduced-motion support |
-| 4.4 | Lighthouse PWA installable; a11y score ≥ 95 |
+| 4.1 | **Replace** `frontend/src/styles/tokens.scss` with `docs/design/tokens.scss` (the `--hp-*` names are canonical; rename any `--hp-color-*` usages). Self-host fonts via `@fontsource/*`. Add `lucide-angular` |
+| 4.2 | Brand: logo SVGs into `src/assets/brand/`, PWA `manifest.webmanifest` + icons from `docs/design/brand/app-icon-*`, favicon from the logo mark, theme-color `#0F766E` |
+| 4.3 | Build `shared/ui` components in the order of ui-spec §3, each with unit + axe tests, shown on a dev-only `/dev/ui` route that mirrors section 2 of `reference/screens.html` |
+| 4.4 | Apply them to the screens that exist so far (shell, onboarding, auth, P1 Home, P2 Load offline) exactly like the reference PNGs. i18n en/hi scaffold. Dark, large-text and reduced-motion support |
+| 4.5 | Playwright visual tests at 390×844 for every implemented reference screen (`toHaveScreenshot`), with demo seed data matching the reference |
+| 4.6 | Lighthouse: PWA installable, accessibility ≥ 95 |
 
-**Acceptance:** screens match the Canva hi-fi frames; axe reports 0 serious/critical issues; the app is installable.
+**Acceptance:** side-by-side with `reference/screens/*.png`, layout, hierarchy, colour, type and copy match. Logo and icons are the provided SVGs (not redrawn). axe reports 0 serious/critical issues. The app is installable. Later phases (5–7) must build P3–P6, M1–M4 and A1 to the same reference and add a visual test for each.
 
 ## Phase 5: Offline payment on devices
 | # | Task |
