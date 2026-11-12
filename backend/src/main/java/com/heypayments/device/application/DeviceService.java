@@ -118,8 +118,34 @@ public class DeviceService {
             .findFirst()
             .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "No active device found"));
 
+    SignedEnvelope merchantCert = null;
+    if (active.getKind() == DeviceKind.MERCHANT) {
+      Merchant merchant =
+          merchantService
+              .findByUserId(userId)
+              .orElseThrow(
+                  () -> new DomainException(ErrorCode.NOT_FOUND, "Merchant profile not found"));
+
+      Instant now = clock.instant();
+      Map<String, Object> mcPayload = new LinkedHashMap<>();
+      mcPayload.put("v", 1);
+      mcPayload.put("t", "MC");
+      mcPayload.put("merchantId", merchant.id().toString());
+      mcPayload.put("deviceId", active.getId().toString());
+      mcPayload.put(
+          "devicePub",
+          Base64.getUrlEncoder().withoutPadding().encodeToString(active.getPublicKey()));
+      mcPayload.put("displayName", merchant.displayName());
+      mcPayload.put("vpaLike", merchant.handle());
+      mcPayload.put("issuedAt", now.toString());
+      mcPayload.put("expiresAt", now.plus(30, ChronoUnit.DAYS).toString());
+      mcPayload.put("kid", serverKeyService.getActiveSigningKey().kid());
+
+      merchantCert = serverKeyService.signEnvelope(mcPayload);
+    }
+
     return new DeviceResponse(
-        active.getId(), active.getStatus().name(), active.getLastCounter(), null);
+        active.getId(), active.getStatus().name(), active.getLastCounter(), merchantCert);
   }
 
   @Transactional

@@ -65,6 +65,20 @@ export class KeyService {
   }
 
   /**
+   * Updates an existing key record's deviceId (e.g. from temporary local ID to server assigned ID).
+   */
+  async updateDeviceId(oldDeviceId: string, newDeviceId: string): Promise<void> {
+    if (oldDeviceId === newDeviceId) {
+      return;
+    }
+    const existing = await db.keys.get(oldDeviceId);
+    if (existing) {
+      await db.keys.delete(oldDeviceId);
+      await db.keys.put({ ...existing, deviceId: newDeviceId });
+    }
+  }
+
+  /**
    * Clears all stored device keys (e.g. on device close or logout).
    */
   async clearKeys(): Promise<void> {

@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthApiService } from '../api/auth-api.service';
 import { KeyService } from '../crypto/key.service';
 import { derivePinHash } from '../crypto/crypto';
+import { db } from '../offline/db';
 import type {
   DeviceResponse,
   LoginRequest,
@@ -45,6 +46,25 @@ export class AuthStore {
 
       const profile = await firstValueFrom(this.api.getMe());
       this.currentUser.set(profile);
+
+      try {
+        const device = await firstValueFrom(this.api.getMyDevice());
+        this.activeDevice.set(device);
+        if (device.merchantCertificate) {
+          await db.certs.put({
+            id: device.deviceId,
+            type: 'MC',
+            envelope: device.merchantCertificate,
+            status: 'ACTIVE',
+            spent: 0,
+            lastCounter: 0,
+            lastHash: '',
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } catch {
+        this.activeDevice.set(null);
+      }
     } catch (err: unknown) {
       const detail = this.extractErrorMessage(err, 'Login failed');
       this.error.set(detail);
@@ -125,6 +145,25 @@ export class AuthStore {
         }),
       );
 
+      // Synchronize local key record deviceId with server-assigned deviceId
+      if (keyRecord.deviceId !== deviceResp.deviceId) {
+        await this.keys.updateDeviceId(keyRecord.deviceId, deviceResp.deviceId);
+      }
+
+      // Persist merchant certificate to Dexie db.certs if issued
+      if (deviceResp.merchantCertificate) {
+        await db.certs.put({
+          id: deviceResp.deviceId,
+          type: 'MC',
+          envelope: deviceResp.merchantCertificate,
+          status: 'ACTIVE',
+          spent: 0,
+          lastCounter: 0,
+          lastHash: '',
+          createdAt: new Date().toISOString(),
+        });
+      }
+
       this.activeDevice.set(deviceResp);
       return deviceResp;
     } catch (err: unknown) {
@@ -157,7 +196,8 @@ export class AuthStore {
       this.currentUser.set(null);
       this.activeDevice.set(null);
       this.error.set(null);
-      await this.keys.clearKeys();
+      // NOTE: Device keys and certificates are preserved across logout/login
+      // as they identify the enrolled hardware/browser instance.
     }
   }
 
