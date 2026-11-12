@@ -45,11 +45,15 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
       interval: 10s
