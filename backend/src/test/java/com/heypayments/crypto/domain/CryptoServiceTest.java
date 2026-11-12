@@ -125,4 +125,32 @@ class CryptoServiceTest {
     ECPublicKey fromJwk = cryptoService.fromJwk(jwk.get("x"), jwk.get("y"));
     assertThat(fromJwk.getW()).isEqualTo(pub.getW());
   }
+
+  @Test
+  @DisplayName("fromJwk should validate 32-byte coordinate lengths and P-256 curve membership")
+  void shouldValidateJwkCoordinatesAndCurveMembership() {
+    // 1. Null / blank coordinates
+    assertThatThrownBy(() -> cryptoService.fromJwk(null, "yCoord"))
+        .isInstanceOf(CryptoException.class)
+        .hasMessageContaining("missing");
+    assertThatThrownBy(() -> cryptoService.fromJwk("xCoord", ""))
+        .isInstanceOf(CryptoException.class)
+        .hasMessageContaining("missing");
+
+    // 2. Coordinate not 32 bytes (e.g. 16 bytes base64url)
+    String shortCoord =
+        java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(new byte[16]);
+    assertThatThrownBy(() -> cryptoService.fromJwk(shortCoord, shortCoord))
+        .isInstanceOf(CryptoException.class)
+        .hasMessageContaining("32 bytes");
+
+    // 3. Coordinate point not on P-256 curve (x=1, y=1)
+    byte[] oneByte = new byte[32];
+    oneByte[31] = 0x01;
+    String oneCoord =
+        java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(oneByte);
+    assertThatThrownBy(() -> cryptoService.fromJwk(oneCoord, oneCoord))
+        .isInstanceOf(CryptoException.class)
+        .hasMessageContaining("curve");
+  }
 }

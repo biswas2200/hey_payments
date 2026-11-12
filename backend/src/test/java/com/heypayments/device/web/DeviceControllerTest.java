@@ -155,6 +155,31 @@ class DeviceControllerTest extends BaseIntegrationTest {
     assertThat(serverKeyService.verifyEnvelope(mcEnvelope, serverPub)).isTrue();
   }
 
+  @Test
+  @DisplayName("registerDevice should reject invalid EC point with 400 VALIDATION_FAILED")
+  void shouldRejectInvalidEcPointOnDeviceRegistration() throws Exception {
+    String token = registerAndLogin("+919876543888", "PAYER", null);
+
+    byte[] badPoint = new byte[32];
+    badPoint[31] = 0x01;
+    String badCoord = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(badPoint);
+
+    RegisterDeviceRequest req =
+        new RegisterDeviceRequest(
+            Map.of("kty", "EC", "crv", "P-256", "x", badCoord, "y", badCoord),
+            "Payer Mobile",
+            "HeyPayments/1.0");
+
+    mockMvc
+        .perform(
+            post("/api/v1/devices")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+  }
+
   private String registerAndLogin(String phone, String role, String displayName) {
     authService.register(
         new RegisterRequest(phone, "user@example.com", "Password123!", role, displayName));
