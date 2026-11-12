@@ -172,4 +172,58 @@ class AuthControllerTest extends BaseIntegrationTest {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
   }
+
+  @Test
+  @DisplayName("Refresh token reuse via /api/v1/auth/refresh must persist family revocation and reject rotated token")
+  void shouldRevokeEntireTokenFamilyOnReuseViaController() throws Exception {
+    String phone = "+919876543999";
+    String password = "Password123!";
+
+    mockMvc
+        .perform(
+            post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        new RegisterRequest(phone, "reuse@example.com", password, "PAYER", "Tester"))))
+        .andExpect(status().isCreated());
+
+    String otp = otpService.getRecentOtpForPhone(phone);
+    mockMvc
+        .perform(
+            post("/api/v1/auth/verify-otp")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new VerifyOtpRequest(phone, otp))))
+        .andExpect(status().isOk());
+
+    MvcResult loginResult =
+        mockMvc
+            .perform(
+                post("/api/v1/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(new LoginRequest(phone, password))))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    Cookie token1 = loginResult.getResponse().getCookie("hp_rt");
+    assertThat(token1).isNotNull();
+
+    MvcResult refreshResult =
+        mockMvc
+            .perform(post("/api/v1/auth/refresh").cookie(token1))
+            .andExpect(status().isOk())
+            .andReturn();
+    Cookie token2 = refreshResult.getResponse().getCookie("hp_rt");
+    assertThat(token2).isNotNull();
+
+    // Reusing token1 triggers reuse detection
+    mockMvc
+        .perform(post("/api/v1/auth/refresh").cookie(token1))
+        .andExpect(status().isUnauthorized());
+
+    // token2 MUST now be revoked and rejected with 401 UNAUTHORIZED
+    mockMvc
+        .perform(post("/api/v1/auth/refresh").cookie(token2))
+        .andExpect(status().isUnauthorized());
+  }
 }
