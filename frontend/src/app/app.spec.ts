@@ -18,29 +18,41 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('should render brand logo image', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hey Payments');
+    const logo = compiled.querySelector('img.app-logo');
+    expect(logo).toBeTruthy();
+    expect(logo?.getAttribute('src')).toBe('brand/logo-wordmark-light.svg');
   });
 
-  it('should render connectivity banner with status', async () => {
+  it('should render online status banner with approved language: Online · synced', async () => {
     const fixture = TestBed.createComponent(App);
+    const connectivityService = TestBed.inject(ConnectivityService);
+    connectivityService.setStatus('online');
     fixture.detectChanges();
     await fixture.whenStable();
     const banner = fixture.nativeElement.querySelector('.connectivity-banner');
-    expect(banner).toBeTruthy();
-    expect(banner?.getAttribute('role')).toBe('status');
+    expect(banner?.textContent).toContain('Online · synced');
   });
 
-  it('should reflect offline status when connectivity changes', async () => {
+  it('should render offline status banner with approved language: Offline · payments still work', async () => {
     const fixture = TestBed.createComponent(App);
     const connectivityService = TestBed.inject(ConnectivityService);
     connectivityService.setStatus('offline');
     fixture.detectChanges();
     await fixture.whenStable();
     const banner = fixture.nativeElement.querySelector('.connectivity-banner');
-    expect(banner?.textContent).toContain('Offline');
+    expect(banner?.textContent).toContain('Offline · payments still work');
+  });
+
+  it('should never expose raw developer instructions or localhost:8080 in UI', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).not.toContain('http://localhost:8080');
+    expect(compiled.textContent).not.toContain('./mvnw spring-boot:run');
   });
 });
