@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.heypayments.shared.domain.exception.DomainException;
 import com.heypayments.shared.domain.exception.ErrorCode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,10 +26,16 @@ class GlobalExceptionHandlerTest {
 
   @BeforeEach
   void setUp() {
+    MDC.clear();
     exceptionHandler = new GlobalExceptionHandler();
     request = new MockHttpServletRequest();
     request.setRequestURI("/api/v1/offline/load");
     MDC.put(RequestIdFilter.MDC_KEY, "test-req-id-123");
+  }
+
+  @AfterEach
+  void tearDown() {
+    MDC.clear();
   }
 
   @Test
