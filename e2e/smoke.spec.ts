@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import * as path from 'node:path';
 
 test.describe('Hey Payments PWA Smoke Test', () => {
   test('should render styled PWA with zero console errors, Calm Ledger theme, status banner, and active service worker', async ({
@@ -43,6 +44,10 @@ test.describe('Hey Payments PWA Smoke Test', () => {
       return !!registration;
     });
     expect(hasServiceWorker).toBe(true);
+
+    // Capture light mode screenshot for review evidence
+    const screenshotPath = path.resolve(__dirname, '../docs/design/screenshots/phase-0-shell-light.png');
+    await page.screenshot({ path: screenshotPath, fullPage: true });
   });
 
   test('should support dark color scheme with dark background', async ({ page }) => {
@@ -54,5 +59,9 @@ test.describe('Hey Payments PWA Smoke Test', () => {
     });
     // Dark mode background is #0B1420 -> rgb(11, 20, 32)
     expect(bodyBg).toBe('rgb(11, 20, 32)');
+
+    // Capture dark mode screenshot for review evidence
+    const screenshotPath = path.resolve(__dirname, '../docs/design/screenshots/phase-0-shell-dark.png');
+    await page.screenshot({ path: screenshotPath, fullPage: true });
   });
 });
