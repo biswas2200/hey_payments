@@ -1,0 +1,30 @@
+{
+  "description" : "Cross-language ECDSA P-256 / SHA-256 / IEEE P1363 test vector",
+  "privateKeyPkcs8Base64" : "MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCB11s1ngc0gf6x0a1a6Q/fR3OHV5bIqIyv05RhmF6WpBA==",
+  "publicKeySec1Base64Url" : "BFbxi3YaRekuxq7OCKfan_aXa5sWscvvbWkERHDGmaI4n77e2Tj53KA8r8ZmEMKbPrR76uA6i0UFzpft_-jAkZQ",
+  "publicKeyJwk" : {
+    "kty" : "EC",
+    "crv" : "P-256",
+    "kid" : "srv-test-key-01",
+    "x" : "VvGLdhpF6S7Grs4Ip9qf9pdrmxaxy-9taQREcMaZojg",
+    "y" : "n77e2Tj53KA8r8ZmEMKbPrR76uA6i0UFzpft_-jAkZQ"
+  },
+  "payload" : {
+    "v" : 1,
+    "t" : "MC",
+    "merchantId" : "01931234-5678-7000-8000-000000000001",
+    "deviceId" : "01931234-5678-7000-8000-000000000009",
+    "displayName" : "Ravi General Store",
+    "issuedAt" : "2026-11-12T10:00:00Z"
+  },
+  "canonicalJson" : "{\"deviceId\":\"01931234-5678-7000-8000-000000000009\",\"displayName\":\"Ravi General Store\",\"issuedAt\":\"2026-11-12T10:00:00Z\",\"merchantId\":\"01931234-5678-7000-8000-000000000001\",\"t\":\"MC\",\"v\":1}",
+  "signatureP1363Base64Url" : "GctvqreEBNupO-Ew9W89AIIR6Eu5phD5HCfcxJM9WBWE7yeJDwboVi6BSXiO4GbZ267tuCF_51R5peZoqVnMkg",
+  "tamperedPayload" : {
+    "v" : 1,
+    "t" : "MC",
+    "merchantId" : "01931234-5678-7000-8000-000000000001",
+    "deviceId" : "01931234-5678-7000-8000-000000000009",
+    "displayName" : "Malicious Store",
+    "issuedAt" : "2026-11-12T10:00:00Z"
+  }
+}
