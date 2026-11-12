@@ -25,16 +25,19 @@ public class SecurityConfig {
   private final ProblemAuthenticationEntryPoint authenticationEntryPoint;
   private final ProblemAccessDeniedHandler accessDeniedHandler;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final com.heypayments.shared.infra.security.RateLimitingFilter rateLimitingFilter;
 
   public SecurityConfig(
       Environment environment,
       ProblemAuthenticationEntryPoint authenticationEntryPoint,
       ProblemAccessDeniedHandler accessDeniedHandler,
-      JwtAuthenticationFilter jwtAuthenticationFilter) {
+      JwtAuthenticationFilter jwtAuthenticationFilter,
+      com.heypayments.shared.infra.security.RateLimitingFilter rateLimitingFilter) {
     this.environment = environment;
     this.authenticationEntryPoint = authenticationEntryPoint;
     this.accessDeniedHandler = accessDeniedHandler;
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    this.rateLimitingFilter = rateLimitingFilter;
   }
 
   @Bean
@@ -70,6 +73,8 @@ public class SecurityConfig {
               }
               auth.anyRequest().authenticated();
             })
+        .addFilterBefore(
+            rateLimitingFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
