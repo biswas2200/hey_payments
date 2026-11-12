@@ -1,13 +1,14 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ApiService, BackendStatus } from './services/api.service';
+import { ConnectivityService } from './core/connectivity/connectivity.service';
 
 @Component({
-  imports: [CommonModule, RouterOutlet],
+  imports: [RouterOutlet],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App implements OnInit {
   protected readonly title = signal('Hey Payments');
@@ -15,6 +16,7 @@ export class App implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly loading = signal(false);
 
+  protected readonly connectivity = inject(ConnectivityService);
   private readonly apiService = inject(ApiService);
 
   ngOnInit(): void {
@@ -29,10 +31,10 @@ export class App implements OnInit {
         this.backendStatus.set(data);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.error.set('Could not connect to Spring Boot backend (http://localhost:8080).');
         this.loading.set(false);
-      }
+      },
     });
   }
 }
