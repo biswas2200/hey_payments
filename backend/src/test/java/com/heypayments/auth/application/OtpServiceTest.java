@@ -61,4 +61,25 @@ class OtpServiceTest {
     assertThat(otpService.verifyAndConsumeOtp("+910000000000", "123456")).isFalse();
     assertThat(otpService.getRecentOtpForPhone("+910000000000")).isNull();
   }
+
+  @Test
+  @DisplayName("should invalidate OTP after 5 failed verification attempts to prevent brute force")
+  void shouldInvalidateOtpAfterMaxFailedAttempts() {
+    String phone = "+919876543299";
+    String otp = otpService.generateAndSendOtp(phone, null);
+
+    // 4 failed attempts
+    for (int i = 0; i < 4; i++) {
+      assertThat(otpService.verifyAndConsumeOtp(phone, "000000")).isFalse();
+    }
+    // Still valid with correct OTP
+    assertThat(otpService.getRecentOtpForPhone(phone)).isEqualTo(otp);
+
+    // 5th failed attempt invalidates OTP
+    assertThat(otpService.verifyAndConsumeOtp(phone, "000000")).isFalse();
+
+    // Now even correct OTP fails because OTP was invalidated
+    assertThat(otpService.verifyAndConsumeOtp(phone, otp)).isFalse();
+    assertThat(otpService.getRecentOtpForPhone(phone)).isNull();
+  }
 }
