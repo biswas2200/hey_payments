@@ -15,6 +15,20 @@ CREATE TABLE audit_log (
 CREATE INDEX ix_audit_log_actor ON audit_log(actor_id, at DESC);
 CREATE INDEX ix_audit_log_entity ON audit_log(entity, entity_id);
 
+-- Enforce append-only guarantee on audit_log
+CREATE OR REPLACE FUNCTION prevent_audit_log_modification()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'audit_log is append-only: UPDATE and DELETE operations are forbidden'
+        USING ERRCODE = 'hp001';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_audit_log_append_only
+    BEFORE UPDATE OR DELETE ON audit_log
+    FOR EACH ROW
+    EXECUTE FUNCTION prevent_audit_log_modification();
+
 -- Idempotency keys fallback repository (Redis is primary, DB is persistent fallback)
 CREATE TABLE idempotency_keys (
     key VARCHAR(128) PRIMARY KEY,
