@@ -17,16 +17,20 @@
     <div class="role-selector" role="radiogroup" aria-label="Account Role">
       <button
         type="button"
+        role="radio"
         class="role-btn"
         [class.active]="role() === 'PAYER'"
+        [attr.aria-checked]="role() === 'PAYER'"
         (click)="role.set('PAYER')"
       >
         Payer
       </button>
       <button
         type="button"
+        role="radio"
         class="role-btn"
         [class.active]="role() === 'MERCHANT'"
+        [attr.aria-checked]="role() === 'MERCHANT'"
         (click)="role.set('MERCHANT')"
       >
         Merchant

@@ -34,7 +34,7 @@ public class DeviceController {
   private final DeviceService deviceService;
 
   @PostMapping
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasAnyRole('PAYER', 'MERCHANT')")
   @Operation(
       summary = "Register device with public key and receive merchant certificate if merchant")
   public ResponseEntity<DeviceResponse> registerDevice(

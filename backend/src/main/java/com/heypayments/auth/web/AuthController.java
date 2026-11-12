@@ -10,6 +10,7 @@ import com.heypayments.auth.web.dto.TokenResponse;
 import com.heypayments.auth.web.dto.VerifyOtpRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.security.Principal;
@@ -40,6 +41,7 @@ public class AuthController {
   private final AuthService authService;
 
   @PostMapping("/register")
+  @PreAuthorize("permitAll()")
   @Operation(summary = "Register a new user (Payer or Merchant)")
   public ResponseEntity<IdResponse> register(@Valid @RequestBody RegisterRequest request) {
     UUID userId = authService.register(request);
@@ -47,6 +49,7 @@ public class AuthController {
   }
 
   @PostMapping("/verify-otp")
+  @PreAuthorize("permitAll()")
   @Operation(summary = "Verify OTP and activate user account")
   public ResponseEntity<Void> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
     authService.verifyOtp(request.phone(), request.otp());
@@ -54,31 +57,38 @@ public class AuthController {
   }
 
   @PostMapping("/login")
+  @PreAuthorize("permitAll()")
   @Operation(summary = "Authenticate user and issue JWT and refresh token cookie")
   public ResponseEntity<TokenResponse> login(
-      @Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+      @Valid @RequestBody LoginRequest request,
+      HttpServletRequest httpRequest,
+      HttpServletResponse response) {
     LoginResult result = authService.login(request);
-    setRefreshCookie(response, result.refreshToken(), REFRESH_COOKIE_MAX_AGE);
+    setRefreshCookie(httpRequest, response, result.refreshToken(), REFRESH_COOKIE_MAX_AGE);
     return ResponseEntity.ok(result.tokenResponse());
   }
 
   @PostMapping("/refresh")
+  @PreAuthorize("permitAll()")
   @Operation(summary = "Rotate refresh token and issue a new access token")
   public ResponseEntity<TokenResponse> refresh(
       @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+      HttpServletRequest httpRequest,
       HttpServletResponse response) {
     LoginResult result = authService.refresh(refreshToken);
-    setRefreshCookie(response, result.refreshToken(), REFRESH_COOKIE_MAX_AGE);
+    setRefreshCookie(httpRequest, response, result.refreshToken(), REFRESH_COOKIE_MAX_AGE);
     return ResponseEntity.ok(result.tokenResponse());
   }
 
   @PostMapping("/logout")
+  @PreAuthorize("permitAll()")
   @Operation(summary = "Logout user and revoke refresh token")
   public ResponseEntity<Void> logout(
       @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+      HttpServletRequest httpRequest,
       HttpServletResponse response) {
     authService.logout(refreshToken);
-    setRefreshCookie(response, "", Duration.ZERO);
+    setRefreshCookie(httpRequest, response, "", Duration.ZERO);
     return ResponseEntity.noContent().build();
   }
 
@@ -92,11 +102,18 @@ public class AuthController {
     return ResponseEntity.noContent().build();
   }
 
-  private void setRefreshCookie(HttpServletResponse response, String token, Duration maxAge) {
+  private void setRefreshCookie(
+      HttpServletRequest request,
+      HttpServletResponse response,
+      String token,
+      Duration maxAge) {
+    boolean secure =
+        request.isSecure()
+            || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
     ResponseCookie cookie =
         ResponseCookie.from(REFRESH_COOKIE_NAME, token)
             .httpOnly(true)
-            .secure(false) // Set to false in dev/local test, true in prod
+            .secure(secure)
             .path("/")
             .sameSite("Strict")
             .maxAge(maxAge)
