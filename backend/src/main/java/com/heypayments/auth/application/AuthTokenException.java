@@ -1,12 +1,16 @@
 package com.heypayments.auth.application;
 
-public class AuthTokenException extends RuntimeException {
+import com.heypayments.shared.domain.exception.DomainException;
+import com.heypayments.shared.domain.exception.ErrorCode;
+
+public class AuthTokenException extends DomainException {
 
   public AuthTokenException(String message) {
-    super(message);
+    super(ErrorCode.UNAUTHENTICATED, message);
   }
 
   public AuthTokenException(String message, Throwable cause) {
-    super(message, cause);
+    super(ErrorCode.UNAUTHENTICATED, message);
+    initCause(cause);
   }
 }

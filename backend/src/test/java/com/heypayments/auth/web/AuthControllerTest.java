@@ -1,6 +1,7 @@
 package com.heypayments.auth.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -29,14 +30,14 @@ import org.springframework.web.context.WebApplicationContext;
 class AuthControllerTest extends BaseIntegrationTest {
 
   @Autowired private WebApplicationContext context;
-  @Autowired private ObjectMapper objectMapper;
   @Autowired private OtpService otpService;
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
   private MockMvc mockMvc;
 
   @BeforeEach
   void setUp() {
-    mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
   }
 
   @Test

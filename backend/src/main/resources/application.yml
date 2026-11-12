@@ -15,6 +15,9 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: ${SPRING_FLYWAY_ENABLED:true}
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
