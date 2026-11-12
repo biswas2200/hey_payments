@@ -8,11 +8,10 @@ describe('HeyPaymentsDb Dexie IndexedDB Store', () => {
   });
 
   it('should store and retrieve device key records', async () => {
-    const keyPair = await crypto.subtle.generateKey(
-      { name: 'ECDSA', namedCurve: 'P-256' },
-      false,
-      ['sign', 'verify'],
-    );
+    const keyPair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, [
+      'sign',
+      'verify',
+    ]);
     const jwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
 
     await db.keys.put({

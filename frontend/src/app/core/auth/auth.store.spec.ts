@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { AuthStore } from './auth.store';
@@ -58,7 +59,15 @@ describe('AuthStore', () => {
       clearKeys: vi.fn().mockResolvedValue(undefined),
     };
 
-    store = new AuthStore(apiMock as AuthApiService, keyServiceMock as KeyService);
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStore,
+        { provide: AuthApiService, useValue: apiMock },
+        { provide: KeyService, useValue: keyServiceMock },
+      ],
+    });
+
+    store = TestBed.inject(AuthStore);
   });
 
   it('should initialize with empty unauthenticated state', () => {
@@ -92,6 +101,55 @@ describe('AuthStore', () => {
     expect(store.error()).toBe('Invalid credentials');
   });
 
+  it('should handle login error with generic fallback message', async () => {
+    (apiMock.login as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      throwError(() => 'Network failure'),
+    );
+
+    await expect(store.login({ phone: '+919876543210', password: 'Wrong' })).rejects.toBeDefined();
+    expect(store.error()).toBe('Login failed');
+  });
+
+  it('should register new user successfully', async () => {
+    const res = await store.register({
+      phone: '+919876543210',
+      password: 'Password123!',
+      role: 'PAYER',
+    });
+
+    expect(apiMock.register).toHaveBeenCalled();
+    expect(res.id).toBe('new-user-id');
+  });
+
+  it('should handle registration failure and set error signal', async () => {
+    (apiMock.register as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      throwError(() => ({ error: { detail: 'Phone already registered' } })),
+    );
+
+    await expect(
+      store.register({
+        phone: '+919876543210',
+        password: 'Password123!',
+        role: 'PAYER',
+      }),
+    ).rejects.toBeDefined();
+    expect(store.error()).toBe('Phone already registered');
+  });
+
+  it('should verify OTP successfully', async () => {
+    await store.verifyOtp({ phone: '+919876543210', otp: '123456' });
+    expect(apiMock.verifyOtp).toHaveBeenCalled();
+  });
+
+  it('should handle verify OTP failure', async () => {
+    (apiMock.verifyOtp as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      throwError(() => ({ error: { detail: 'Invalid OTP code' } })),
+    );
+
+    await expect(store.verifyOtp({ phone: '+919876543210', otp: '000000' })).rejects.toBeDefined();
+    expect(store.error()).toBe('Invalid OTP code');
+  });
+
   it('should register current device using non-extractable key from KeyService', async () => {
     await store.registerCurrentDevice('My Pixel Phone');
 
@@ -104,9 +162,43 @@ describe('AuthStore', () => {
     expect(store.activeDevice()).toEqual(mockDeviceResponse);
   });
 
+  it('should handle register device failure', async () => {
+    (apiMock.registerDevice as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      throwError(() => ({ error: { detail: 'Device limit reached' } })),
+    );
+
+    await expect(store.registerCurrentDevice()).rejects.toBeDefined();
+    expect(store.error()).toBe('Device limit reached');
+  });
+
+  it('should refresh session successfully', async () => {
+    const res = await store.refreshSession();
+    expect(res.accessToken).toBe('mock-jwt-token-xyz');
+    expect(store.accessToken()).toBe('mock-jwt-token-xyz');
+  });
+
+  it('should logout if refresh session fails', async () => {
+    (apiMock.refresh as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      throwError(() => new Error('Token revoked')),
+    );
+
+    await expect(store.refreshSession()).rejects.toBeDefined();
+    expect(store.currentUser()).toBeNull();
+    expect(store.accessToken()).toBeNull();
+  });
+
   it('should set payment PIN', async () => {
     await store.setPin('123456');
     expect(apiMock.setPin).toHaveBeenCalledWith({ pin: '123456' });
+  });
+
+  it('should handle setPin error', async () => {
+    (apiMock.setPin as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      throwError(() => ({ error: { detail: 'Weak PIN' } })),
+    );
+
+    await expect(store.setPin('000000')).rejects.toBeDefined();
+    expect(store.error()).toBe('Weak PIN');
   });
 
   it('should clear tokens, state, and keys on logout', async () => {

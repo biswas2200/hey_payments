@@ -1,0 +1,63 @@
+<div class="auth-card">
+  <div class="header">
+    <div class="logo-box">
+      <img src="/brand/logo-mark.svg" alt="Hey Payments Logo" width="48" height="48" />
+    </div>
+    <h1 class="title">Welcome Back</h1>
+    <p class="subtitle">Sign in to manage your offline wallet and keys</p>
+  </div>
+
+  @if (formError() || auth.error()) {
+    <div class="error-banner" role="alert">
+      {{ formError() || auth.error() }}
+    </div>
+  }
+
+  <form (ngSubmit)="onSubmit()" class="form-body">
+    <div class="field">
+      <label for="phone" class="label">Mobile Number</label>
+      <div class="input-group">
+        <span class="prefix">+91</span>
+        <input
+          id="phone"
+          name="phone"
+          type="tel"
+          [ngModel]="phone()"
+          (ngModelChange)="phone.set($event)"
+          placeholder="98765 43210"
+          class="input with-prefix"
+          required
+          autocomplete="tel-national"
+        />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="password" class="label">Password</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+        placeholder="Enter password"
+        class="input"
+        required
+        autocomplete="current-password"
+      />
+    </div>
+
+    <button type="submit" class="btn btn-primary" [disabled]="auth.loading()">
+      @if (auth.loading()) {
+        Signing In...
+      } @else {
+        Sign In
+      }
+    </button>
+
+    <div class="footer-links">
+      <span class="muted">Don't have an account?</span>
+      <a routerLink="/auth/register" class="link">Create an account</a>
+    </div>
+  </form>
+</div>

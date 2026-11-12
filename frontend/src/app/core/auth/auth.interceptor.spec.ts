@@ -51,7 +51,7 @@ describe('authInterceptor', () => {
 
     const request = new HttpRequest('GET', '/api/v1/users/me');
     let calls = 0;
-    const next: HttpHandlerFn = (req) => {
+    const next: HttpHandlerFn = () => {
       calls++;
       if (calls === 1) {
         return throwError(() => new HttpErrorResponse({ status: 401 }));

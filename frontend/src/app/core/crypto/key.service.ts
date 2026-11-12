@@ -5,7 +5,12 @@
  */
 
 import { db, type KeyRecord } from '../offline/db';
-import { exportPublicKeyJwk, generateDeviceKeyPair, signEnvelope, type SignedEnvelope } from './crypto';
+import {
+  exportPublicKeyJwk,
+  generateDeviceKeyPair,
+  signEnvelope,
+  type SignedEnvelope,
+} from './crypto';
 
 export class KeyService {
   /**

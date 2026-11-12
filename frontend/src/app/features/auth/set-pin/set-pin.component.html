@@ -1,0 +1,61 @@
+<div class="auth-card">
+  <div class="header">
+    <div class="logo-box">
+      <img src="/brand/logo-mark.svg" alt="Hey Payments Logo" width="48" height="48" />
+    </div>
+    <h1 class="title">Set Payment PIN</h1>
+    <p class="subtitle">Create a 6-digit PIN used to authorize offline vouchers</p>
+  </div>
+
+  @if (formError() || auth.error()) {
+    <div class="error-banner" role="alert">
+      {{ formError() || auth.error() }}
+    </div>
+  }
+
+  <form (ngSubmit)="onSubmit()" class="form-body">
+    <div class="field">
+      <label for="new-pin" class="label">New 6-Digit PIN</label>
+      <input
+        id="new-pin"
+        name="pin"
+        type="password"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        maxlength="6"
+        [ngModel]="pin()"
+        (ngModelChange)="pin.set($event)"
+        placeholder="••••••"
+        class="input pin-input"
+        required
+        autocomplete="new-password"
+      />
+    </div>
+
+    <div class="field">
+      <label for="confirm-pin" class="label">Confirm PIN</label>
+      <input
+        id="confirm-pin"
+        name="confirmPin"
+        type="password"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        maxlength="6"
+        [ngModel]="confirmPin()"
+        (ngModelChange)="confirmPin.set($event)"
+        placeholder="••••••"
+        class="input pin-input"
+        required
+        autocomplete="new-password"
+      />
+    </div>
+
+    <button type="submit" class="btn btn-primary" [disabled]="auth.loading()">
+      @if (auth.loading()) {
+        Saving PIN...
+      } @else {
+        Save PIN & Continue
+      }
+    </button>
+  </form>
+</div>

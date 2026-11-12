@@ -47,8 +47,7 @@ export function canonicalize(val: unknown): string {
 
   if (Array.isArray(val)) {
     const items: string[] = [];
-    for (let i = 0; i < val.length; i++) {
-      const item = val[i];
+    for (const item of val) {
       if (item === undefined || typeof item === 'symbol' || typeof item === 'function') {
         items.push('null');
       } else {

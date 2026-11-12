@@ -77,7 +77,7 @@ describe('Frontend Crypto & Shared Test Vectors', () => {
     });
 
     it('should handle undefined and functions in arrays and objects', () => {
-      const fn = () => {};
+      const fn = () => undefined;
       const sym = Symbol('test');
       expect(canonicalize([undefined, fn, sym, 1])).toBe('[null,null,null,1]');
       expect(canonicalize({ a: undefined, b: fn, c: sym, d: 'keep' })).toBe('{"d":"keep"}');
@@ -89,7 +89,7 @@ describe('Frontend Crypto & Shared Test Vectors', () => {
     });
 
     it('should properly order surrogate pairs and astral code points', () => {
-      const input = { '𐐷': 1, 'a': 2, 'z': 3 };
+      const input = { '𐐷': 1, a: 2, z: 3 };
       expect(canonicalize(input)).toBe('{"a":2,"z":3,"𐐷":1}');
     });
   });
