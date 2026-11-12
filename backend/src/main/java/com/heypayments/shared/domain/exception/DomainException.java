@@ -4,37 +4,37 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Base domain exception representing business and protocol errors.
- * Mapped to RFC 9457 Problem Details by GlobalExceptionHandler.
+ * Base domain exception representing business and protocol errors. Mapped to RFC 9457 Problem
+ * Details by GlobalExceptionHandler.
  */
 public class DomainException extends RuntimeException {
 
-    private final ErrorCode errorCode;
-    private final List<FieldErrorDetail> fieldErrors;
+  private final ErrorCode errorCode;
+  private final List<FieldErrorDetail> fieldErrors;
 
-    public DomainException(ErrorCode errorCode, String detail) {
-        super(detail);
-        this.errorCode = errorCode;
-        this.fieldErrors = Collections.emptyList();
-    }
+  public DomainException(ErrorCode errorCode, String detail) {
+    super(detail);
+    this.errorCode = errorCode;
+    this.fieldErrors = Collections.emptyList();
+  }
 
-    public DomainException(ErrorCode errorCode, String detail, Throwable cause) {
-        super(detail, cause);
-        this.errorCode = errorCode;
-        this.fieldErrors = Collections.emptyList();
-    }
+  public DomainException(ErrorCode errorCode, String detail, Throwable cause) {
+    super(detail, cause);
+    this.errorCode = errorCode;
+    this.fieldErrors = Collections.emptyList();
+  }
 
-    public DomainException(ErrorCode errorCode, String detail, List<FieldErrorDetail> fieldErrors) {
-        super(detail);
-        this.errorCode = errorCode;
-        this.fieldErrors = fieldErrors != null ? List.copyOf(fieldErrors) : Collections.emptyList();
-    }
+  public DomainException(ErrorCode errorCode, String detail, List<FieldErrorDetail> fieldErrors) {
+    super(detail);
+    this.errorCode = errorCode;
+    this.fieldErrors = fieldErrors != null ? List.copyOf(fieldErrors) : Collections.emptyList();
+  }
 
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
+  public ErrorCode getErrorCode() {
+    return errorCode;
+  }
 
-    public List<FieldErrorDetail> getFieldErrors() {
-        return fieldErrors;
-    }
+  public List<FieldErrorDetail> getFieldErrors() {
+    return fieldErrors;
+  }
 }

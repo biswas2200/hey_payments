@@ -18,6 +18,8 @@ target/
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/*.log
 *.log
+.jqwik-database
+backend/.jqwik-database
 
 # Frontend (Angular / Node)
 frontend/node_modules/

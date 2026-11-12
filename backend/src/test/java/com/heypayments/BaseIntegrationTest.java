@@ -12,11 +12,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles("test")
 public abstract class BaseIntegrationTest {
 
-    @Container
-    @ServiceConnection
-    protected static final PostgreSQLContainer<?> postgres =
-            new PostgreSQLContainer<>("postgres:16-alpine")
-                    .withDatabaseName("heypayments")
-                    .withUsername("hp")
-                    .withPassword("test");
+  @Container @ServiceConnection
+  protected static final PostgreSQLContainer<?> postgres =
+      new PostgreSQLContainer<>("postgres:16-alpine")
+          .withDatabaseName("heypayments")
+          .withUsername("hp")
+          .withPassword("test");
 }

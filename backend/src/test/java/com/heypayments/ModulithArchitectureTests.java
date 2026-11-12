@@ -6,11 +6,11 @@ import org.springframework.modulith.core.ApplicationModules;
 
 class ModulithArchitectureTests {
 
-    private final ApplicationModules modules = ApplicationModules.of(BackendApplication.class);
+  private final ApplicationModules modules = ApplicationModules.of(BackendApplication.class);
 
-    @Test
-    @DisplayName("should satisfy Spring Modulith architectural boundaries")
-    void verifyModularity() {
-        modules.verify();
-    }
+  @Test
+  @DisplayName("should satisfy Spring Modulith architectural boundaries")
+  void verifyModularity() {
+    modules.verify();
+  }
 }
