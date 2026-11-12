@@ -1,13 +1,12 @@
 package com.heypayments;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class BackendApplicationTests {
+class BackendApplicationTests extends BaseIntegrationTest {
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    @DisplayName("should load application context with PostgreSQL Testcontainers and Flyway baseline")
+    void contextLoads() {
+    }
 }
