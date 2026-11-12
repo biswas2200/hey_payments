@@ -1,4 +1,4 @@
-.PHONY: help up down dev test test-be test-fe e2e lint fmt logs psql reset-db scan
+.PHONY: help up down dev test test-be test-fe e2e lint fmt logs psql reset-db scan vectors certs
 
 help:
 	@echo "Hey Payments Makefile targets:"
@@ -9,6 +9,8 @@ help:
 	@echo "  make test-be  - Run backend tests (Maven verify)"
 	@echo "  make test-fe  - Run frontend tests (Vitest)"
 	@echo "  make e2e      - Run end-to-end tests"
+	@echo "  make vectors  - Generate shared protocol test vectors"
+	@echo "  make certs    - Generate TLS and development certificates"
 	@echo "  make lint     - Run linter checks (Spotless, Checkstyle)"
 	@echo "  make fmt      - Auto-format code"
 	@echo "  make logs     - Follow container logs"
@@ -55,3 +57,9 @@ reset-db:
 
 scan:
 	@echo "Running security scans..."
+
+vectors:
+	@echo "Shared protocol test vectors generation will run in Phase 1+"
+
+certs:
+	@echo "TLS development certificates generation will run in Phase 8"
