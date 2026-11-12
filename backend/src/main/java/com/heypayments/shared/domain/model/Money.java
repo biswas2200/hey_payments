@@ -1,5 +1,7 @@
 package com.heypayments.shared.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -9,12 +11,23 @@ import java.util.Objects;
  *
  * @param paise the amount in integer minor units (paise)
  */
-public record Money(long paise) implements Comparable<Money> {
+public record Money(@JsonValue long paise) implements Comparable<Money> {
 
-  /** Compact constructor validating the non-negative invariant. */
+  /** Maximum safe integer in JavaScript / IEEE-754 double precision (2^53 - 1). */
+  public static final long MAX_SAFE_PAISE = 9_007_199_254_740_991L;
+
+  /** Compact constructor validating the non-negative and safe integer invariants. */
   public Money {
     if (paise < 0) {
       throw new IllegalArgumentException("Money amount in paise cannot be negative: " + paise);
+    }
+    if (paise > MAX_SAFE_PAISE) {
+      throw new IllegalArgumentException(
+          "Money amount in paise "
+              + paise
+              + " exceeds safe integer bound ("
+              + MAX_SAFE_PAISE
+              + ")");
     }
   }
 
@@ -24,6 +37,7 @@ public record Money(long paise) implements Comparable<Money> {
    * @param paise the amount in paise
    * @return non-null Money instance
    */
+  @JsonCreator
   public static Money ofPaise(long paise) {
     return new Money(paise);
   }

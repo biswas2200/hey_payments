@@ -52,7 +52,8 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("should map HttpMessageNotReadableException to 400 VALIDATION_FAILED, not 500 INTERNAL")
+  @DisplayName(
+      "should map HttpMessageNotReadableException to 400 VALIDATION_FAILED, not 500 INTERNAL")
   void shouldMapHttpMessageNotReadableException() {
     HttpMessageNotReadableException ex =
         new HttpMessageNotReadableException(
@@ -107,8 +108,7 @@ class GlobalExceptionHandlerTest {
   void shouldMapAccessDeniedException() {
     AccessDeniedException ex = new AccessDeniedException("Access is denied");
 
-    ResponseEntity<ProblemResponse> response =
-        exceptionHandler.handleAccessDenied(ex, request);
+    ResponseEntity<ProblemResponse> response = exceptionHandler.handleAccessDenied(ex, request);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     ProblemResponse body = response.getBody();
