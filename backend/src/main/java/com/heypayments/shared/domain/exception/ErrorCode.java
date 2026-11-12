@@ -21,6 +21,7 @@ public enum ErrorCode {
   IDEMPOTENCY_KEY_REUSED(
       HttpStatus.UNPROCESSABLE_ENTITY, "Idempotency Key Reused", "idempotency-key-reused"),
   RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Rate Limited", "rate-limited"),
+  METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", "method-not-allowed"),
   INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "internal");
 
   private final HttpStatus httpStatus;
