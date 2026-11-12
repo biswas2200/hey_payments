@@ -112,5 +112,6 @@ describe('authInterceptor', () => {
     expect((res1 as HttpResponse<string>).body).toBe('res1');
     expect((res2 as HttpResponse<string>).body).toBe('res2');
     expect(authStoreMock.refreshSession).toHaveBeenCalledTimes(1);
+    expect(refreshCalls).toBe(1);
   });
 });
