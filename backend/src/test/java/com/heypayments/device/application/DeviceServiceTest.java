@@ -132,6 +132,7 @@ class DeviceServiceTest {
         .thenReturn(new SignedEnvelope(Map.of("t", "MC"), "mc-signature"));
 
     DeviceResponse response = deviceService.registerDevice(userId, "MERCHANT", req);
+    assertThat(response.deviceId().version()).isEqualTo(7);
     assertThat(response.status()).isEqualTo("ACTIVE");
     assertThat(response.merchantCertificate()).isNotNull();
     assertThat(response.merchantCertificate().s()).isEqualTo("mc-signature");
@@ -195,7 +196,7 @@ class DeviceServiceTest {
             .id(UUID.randomUUID())
             .userId(merchantUserId)
             .kind(DeviceKind.MERCHANT)
-            .publicKeySec1(new byte[65])
+            .publicKey(new byte[65])
             .status(DeviceStatus.ACTIVE)
             .lastCounter(0L)
             .build();

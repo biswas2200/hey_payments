@@ -75,6 +75,7 @@ class AuthServiceTest {
 
     UUID userId = authService.register(req);
     assertThat(userId).isNotNull();
+    assertThat(userId.version()).isEqualTo(7);
     verify(userRepository).save(any(UserEntity.class));
     verify(otpService).generateAndSendOtp(eq(req.phone()), eq(req.email()));
 

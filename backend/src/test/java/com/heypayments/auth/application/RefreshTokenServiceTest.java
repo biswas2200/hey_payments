@@ -52,11 +52,15 @@ class RefreshTokenServiceTest extends BaseIntegrationTest {
         .isInstanceOf(AuthTokenException.class)
         .hasMessageContaining("reuse");
 
-    // Verify all family tokens are now revoked
+    // Verify all family tokens are now revoked and were created with UUIDv7
     List<RefreshTokenEntity> allTokens = refreshTokenRepository.findAll();
     assertThat(allTokens)
         .filteredOn(t -> t.getUserId().equals(userId))
-        .allMatch(t -> t.getRevokedAt() != null);
+        .allMatch(
+            t ->
+                t.getRevokedAt() != null
+                    && t.getId().version() == 7
+                    && t.getFamilyId().version() == 7);
 
     // Attempting to use rawToken2 now must also fail because family was revoked
     assertThatThrownBy(() -> refreshTokenService.rotateRefreshToken(rawToken2))
