@@ -1,0 +1,110 @@
+/* Hey Payments design tokens - source of truth: docs/design/tokens.json */
+:root {
+  /* Colors - Light Theme (default) */
+  --hp-color-bg: #f7f5f0;
+  --hp-color-surface: #ffffff;
+  --hp-color-surface-alt: #efebe3;
+  --hp-color-ink: #0e1b2c;
+  --hp-color-ink-muted: #4a5568;
+  --hp-color-border: #6b7280;
+  --hp-color-divider: #e2ded5;
+  --hp-color-primary: #0f766e;
+  --hp-color-on-primary: #ffffff;
+  --hp-color-primary-soft: #ccfbf1;
+  --hp-color-accent: #f5a524;
+  --hp-color-on-accent: #0e1b2c;
+  --hp-color-status-offline: #4338ca;
+  --hp-color-status-pending: #b45309;
+  --hp-color-status-settled: #15803d;
+  --hp-color-status-failed: #b91c1c;
+  --hp-color-focus: #2563eb;
+
+  /* Typography */
+  --hp-font-family-display: 'Space Grotesk', system-ui, sans-serif;
+  --hp-font-family-body: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+  --hp-font-family-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --hp-font-scale-display: 2.5rem;
+  --hp-font-scale-h1: 2rem;
+  --hp-font-scale-h2: 1.5rem;
+  --hp-font-scale-h3: 1.25rem;
+  --hp-font-scale-body-lg: 1.125rem;
+  --hp-font-scale-body: 1rem;
+  --hp-font-scale-caption: 0.875rem;
+  --hp-font-scale-overline: 0.75rem;
+  --hp-font-scale-amount-hero: 3rem;
+
+  --hp-font-weight-regular: 400;
+  --hp-font-weight-medium: 500;
+  --hp-font-weight-semibold: 600;
+  --hp-font-weight-bold: 700;
+
+  --hp-line-height-tight: 1.15;
+  --hp-line-height-normal: 1.5;
+
+  /* Spacing */
+  --hp-space-0: 0px;
+  --hp-space-1: 4px;
+  --hp-space-2: 8px;
+  --hp-space-3: 12px;
+  --hp-space-4: 16px;
+  --hp-space-5: 24px;
+  --hp-space-6: 32px;
+  --hp-space-7: 48px;
+  --hp-space-8: 64px;
+
+  /* Radius */
+  --hp-radius-sm: 8px;
+  --hp-radius-md: 12px;
+  --hp-radius-lg: 20px;
+  --hp-radius-pill: 999px;
+
+  /* Elevation */
+  --hp-elevation-1: 0 1px 2px rgba(14, 27, 44, 0.08);
+  --hp-elevation-2: 0 4px 12px rgba(14, 27, 44, 0.1);
+  --hp-elevation-3: 0 12px 32px rgba(14, 27, 44, 0.16);
+
+  /* Motion */
+  --hp-motion-duration-instant: 100ms;
+  --hp-motion-duration-fast: 160ms;
+  --hp-motion-duration-base: 240ms;
+  --hp-motion-duration-slow: 400ms;
+  --hp-motion-duration-success: 600ms;
+
+  --hp-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --hp-motion-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --hp-motion-ease-exit: cubic-bezier(0.3, 0, 1, 1);
+
+  /* Touch target minimum (WCAG 2.2 AA) */
+  --hp-touch-target-min: 44px;
+}
+
+[data-theme='dark'] {
+  --hp-color-bg: #0b1420;
+  --hp-color-surface: #132033;
+  --hp-color-surface-alt: #1b2a40;
+  --hp-color-ink: #e8eef5;
+  --hp-color-ink-muted: #94a3b8;
+  --hp-color-border: #64748b;
+  --hp-color-divider: #22324a;
+  --hp-color-primary: #2dd4bf;
+  --hp-color-on-primary: #0b1420;
+  --hp-color-primary-soft: #134e4a;
+  --hp-color-accent: #f5a524;
+  --hp-color-on-accent: #0e1b2c;
+  --hp-color-status-offline: #a5b4fc;
+  --hp-color-status-pending: #fbbf24;
+  --hp-color-status-settled: #4ade80;
+  --hp-color-status-failed: #f87171;
+  --hp-color-focus: #93c5fd;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --hp-motion-duration-instant: 0ms;
+    --hp-motion-duration-fast: 0ms;
+    --hp-motion-duration-base: 0ms;
+    --hp-motion-duration-slow: 0ms;
+    --hp-motion-duration-success: 0ms;
+  }
+}

@@ -37,9 +37,11 @@ e2e:
 
 lint:
 	cd backend && ./mvnw spotless:check checkstyle:check
+	cd frontend && npm run lint && npm run format:check
 
 fmt:
 	cd backend && ./mvnw spotless:apply
+	cd frontend && npm run format
 
 logs:
 	docker compose logs -f
