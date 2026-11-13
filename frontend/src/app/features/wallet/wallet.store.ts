@@ -40,7 +40,11 @@ export class WalletStore {
     }
   }
 
-  async fundWallet(amountPaise: number, source: 'SIM_BANK' = 'SIM_BANK'): Promise<WalletResponse> {
+  async fundWallet(
+    amountPaise: number,
+    source: 'SIM_BANK' = 'SIM_BANK',
+    idempotencyKey?: string,
+  ): Promise<WalletResponse> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -54,10 +58,10 @@ export class WalletStore {
     }
 
     try {
-      const idempotencyKey = crypto.randomUUID();
+      const key = idempotencyKey || crypto.randomUUID();
       const resp = await firstValueFrom(
         this.walletApi.walletsMeFundPost({
-          'Idempotency-Key': idempotencyKey,
+          'Idempotency-Key': key,
           body: { amount: amountPaise, source },
         }),
       );

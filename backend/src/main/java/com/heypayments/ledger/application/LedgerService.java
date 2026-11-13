@@ -97,25 +97,8 @@ public class LedgerService {
     }
 
     // 2. Validate line constraints and balance invariant (Σ = 0)
+    command.validate();
     List<PostJournalLineCommand> lines = command.lines();
-    if (lines == null || lines.size() < 2) {
-      throw new DomainException(
-          ErrorCode.VALIDATION_FAILED, "Journal entry must have at least 2 lines");
-    }
-
-    long sum = 0L;
-    for (PostJournalLineCommand line : lines) {
-      if (line.amount() == 0L) {
-        throw new DomainException(ErrorCode.VALIDATION_FAILED, "Journal line amount cannot be 0");
-      }
-      sum += line.amount();
-    }
-
-    if (sum != 0L) {
-      throw new DomainException(
-          ErrorCode.VALIDATION_FAILED,
-          "Journal entry unbalanced: sum of lines must be 0, found " + sum);
-    }
 
     Instant now = clock.instant();
     UUID entryId = UuidV7Generator.generate();
@@ -137,14 +120,7 @@ public class LedgerService {
                               new DomainException(
                                   ErrorCode.NOT_FOUND, "Account not found: " + code)));
 
-      long newBalance = account.getBalance() + line.amount();
-      if (isNonNegativeAccountType(account.getType()) && newBalance < 0L) {
-        throw new DomainException(
-            ErrorCode.INSUFFICIENT_FUNDS,
-            "Account " + account.getCode() + " cannot have negative balance: " + newBalance);
-      }
-
-      account.setBalance(newBalance);
+      account.applyDelta(line.amount());
       account.setUpdatedAt(now);
 
       UUID lineId = UuidV7Generator.generate();

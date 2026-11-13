@@ -53,8 +53,10 @@
 }
 
 .icon-btn {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--hp-r-full);
   background: transparent;
   border: 1px solid var(--hp-line);
@@ -67,6 +69,11 @@
   &:hover {
     background: var(--hp-surface-alt);
     color: var(--hp-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--hp-brand);
+    outline-offset: 2px;
   }
 }
 
@@ -175,10 +182,28 @@
   font-size: var(--hp-fs-body);
   cursor: pointer;
   padding: var(--hp-space-2) var(--hp-space-3);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--hp-r-xs);
 
   &:hover {
     background: var(--hp-primary-soft);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--hp-brand);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn,
+  .progress-bar,
+  .quick-card,
+  .btn {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 

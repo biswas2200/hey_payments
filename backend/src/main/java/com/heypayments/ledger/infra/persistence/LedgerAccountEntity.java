@@ -1,6 +1,8 @@
 package com.heypayments.ledger.infra.persistence;
 
 import com.heypayments.ledger.domain.model.AccountType;
+import com.heypayments.shared.domain.exception.DomainException;
+import com.heypayments.shared.domain.exception.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -54,4 +56,28 @@ public class LedgerAccountEntity {
 
   @Column(name = "updated_at", nullable = false)
   private Instant updatedAt;
+
+  public void applyDelta(long amount) {
+    long newBalance;
+    try {
+      newBalance = Math.addExact(this.balance != null ? this.balance : 0L, amount);
+    } catch (ArithmeticException e) {
+      throw new DomainException(
+          ErrorCode.VALIDATION_FAILED, "Account balance overflowed: " + this.code);
+    }
+
+    if (isNonNegativeAccountType(this.type) && newBalance < 0L) {
+      throw new DomainException(
+          ErrorCode.INSUFFICIENT_FUNDS,
+          "Account " + this.code + " cannot have negative balance: " + newBalance);
+    }
+
+    this.balance = newBalance;
+  }
+
+  private boolean isNonNegativeAccountType(AccountType accountType) {
+    return accountType == AccountType.USER_MAIN
+        || accountType == AccountType.OFFLINE_ESCROW
+        || accountType == AccountType.MERCHANT_PAYABLE;
+  }
 }

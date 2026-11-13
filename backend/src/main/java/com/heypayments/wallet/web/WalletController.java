@@ -1,5 +1,8 @@
 package com.heypayments.wallet.web;
 
+import com.heypayments.shared.domain.exception.DomainException;
+import com.heypayments.shared.domain.exception.ErrorCode;
+import com.heypayments.shared.infra.idempotency.IdempotentResult;
 import com.heypayments.wallet.application.WalletService;
 import com.heypayments.wallet.web.dto.FundRequest;
 import com.heypayments.wallet.web.dto.WalletResponse;
@@ -28,7 +31,7 @@ public class WalletController {
   private final WalletService walletService;
 
   @GetMapping("/me")
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasRole('PAYER')")
   @Operation(summary = "Get current wallet balances")
   public ResponseEntity<WalletResponse> getWallet(Principal principal) {
     UUID userId = UUID.fromString(principal.getName());
@@ -36,15 +39,32 @@ public class WalletController {
   }
 
   @PostMapping("/me/fund")
-  @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasRole('PAYER')")
   @Operation(summary = "Fund wallet via simulated bank/UPI")
   public ResponseEntity<WalletResponse> fundWallet(
-      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+      @RequestHeader(value = "Idempotency-Key", required = true) String idempotencyKey,
       @Valid @RequestBody FundRequest request,
       Principal principal) {
+    validateUuid(idempotencyKey);
     UUID userId = UUID.fromString(principal.getName());
-    WalletResponse response =
+    IdempotentResult<WalletResponse> result =
         walletService.fundWallet(userId, request.amount(), request.source(), idempotencyKey);
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    ResponseEntity.BodyBuilder builder = ResponseEntity.status(HttpStatus.CREATED);
+    if (result.replayed()) {
+      builder.header("Idempotent-Replayed", "true");
+    }
+    return builder.body(result.result());
+  }
+
+  private void validateUuid(String key) {
+    if (key == null || key.isBlank()) {
+      throw new DomainException(ErrorCode.VALIDATION_FAILED, "Idempotency-Key header is required");
+    }
+    try {
+      UUID.fromString(key);
+    } catch (IllegalArgumentException e) {
+      throw new DomainException(
+          ErrorCode.VALIDATION_FAILED, "Idempotency-Key must be a valid UUID format");
+    }
   }
 }

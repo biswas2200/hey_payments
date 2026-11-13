@@ -29,6 +29,8 @@ export class FundComponent implements OnInit {
   readonly isSubmitting = signal<boolean>(false);
   readonly successResponse = signal<WalletResponse | null>(null);
 
+  pendingIdempotencyKey: string | null = null;
+
   readonly isValidAmount = computed(() => {
     const val = this.amount();
     return val > 0 && val <= 50000;
@@ -39,12 +41,16 @@ export class FundComponent implements OnInit {
   }
 
   selectAmount(amt: number): void {
+    if (this.amount() !== amt) {
+      this.pendingIdempotencyKey = null;
+    }
     this.amount.set(amt);
   }
 
   onAmountInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     const val = parseInt(target.value, 10);
+    this.pendingIdempotencyKey = null;
     this.amount.set(isNaN(val) ? 0 : val);
   }
 
@@ -58,13 +64,22 @@ export class FundComponent implements OnInit {
       return;
     }
 
+    if (!this.pendingIdempotencyKey) {
+      this.pendingIdempotencyKey = crypto.randomUUID();
+    }
+
     this.isSubmitting.set(true);
     try {
       const amountPaise = this.amount() * 100;
-      const resp = await this.walletStore.fundWallet(amountPaise, this.source());
+      const resp = await this.walletStore.fundWallet(
+        amountPaise,
+        this.source(),
+        this.pendingIdempotencyKey,
+      );
       this.successResponse.set(resp);
+      this.pendingIdempotencyKey = null;
     } catch {
-      // error signal in walletStore is displayed
+      // Keep pendingIdempotencyKey so retrying reuses the same key (MEDIUM-4)
     } finally {
       this.isSubmitting.set(false);
     }

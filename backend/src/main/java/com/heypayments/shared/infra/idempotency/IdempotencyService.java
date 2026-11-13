@@ -27,10 +27,10 @@ public class IdempotencyService {
   private final Clock clock;
 
   @Transactional
-  public <T> T execute(
+  public <T> IdempotentResult<T> execute(
       String key, UUID userId, Object requestPayload, Class<T> responseType, Supplier<T> action) {
     if (key == null || key.isBlank()) {
-      return action.get();
+      return new IdempotentResult<>(action.get(), false);
     }
 
     String requestHash = hashPayload(requestPayload);
@@ -38,6 +38,11 @@ public class IdempotencyService {
     Optional<IdempotencyKeyEntity> existing = repository.findByKey(key);
     if (existing.isPresent()) {
       IdempotencyKeyEntity entity = existing.get();
+      if (entity.getUserId() != null && !entity.getUserId().equals(userId)) {
+        throw new DomainException(
+            ErrorCode.FORBIDDEN, "Idempotency key does not belong to the authenticated user");
+      }
+
       if (!requestHash.equals(entity.getRequestHash())) {
         throw new DomainException(
             ErrorCode.IDEMPOTENCY_KEY_REUSED,
@@ -45,7 +50,8 @@ public class IdempotencyService {
       }
 
       try {
-        return objectMapper.readValue(entity.getResponse(), responseType);
+        T cached = objectMapper.readValue(entity.getResponse(), responseType);
+        return new IdempotentResult<>(cached, true);
       } catch (JsonProcessingException e) {
         log.error("Failed to deserialize cached idempotency response: {}", e.getMessage());
         throw new DomainException(ErrorCode.INTERNAL, "Corrupted cached response");
@@ -74,7 +80,7 @@ public class IdempotencyService {
             .build();
 
     repository.save(newKey);
-    return response;
+    return new IdempotentResult<>(response, false);
   }
 
   private String hashPayload(Object payload) {

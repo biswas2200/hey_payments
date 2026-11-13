@@ -7,8 +7,10 @@ import com.heypayments.ledger.domain.model.AccountType;
 import com.heypayments.ledger.domain.model.EntryKind;
 import com.heypayments.shared.domain.exception.DomainException;
 import com.heypayments.shared.domain.exception.ErrorCode;
+import com.heypayments.shared.infra.audit.AuditService;
 import com.heypayments.shared.infra.id.UuidV7Generator;
 import com.heypayments.shared.infra.idempotency.IdempotencyService;
+import com.heypayments.shared.infra.idempotency.IdempotentResult;
 import com.heypayments.wallet.domain.model.Wallet;
 import com.heypayments.wallet.infra.persistence.WalletEntity;
 import com.heypayments.wallet.infra.persistence.WalletRepository;
@@ -20,6 +22,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,7 @@ public class WalletService {
   private final WalletRepository walletRepository;
   private final LedgerService ledgerService;
   private final IdempotencyService idempotencyService;
+  private final AuditService auditService;
   private final JdbcTemplate jdbcTemplate;
   private final Clock clock;
 
@@ -89,7 +93,7 @@ public class WalletService {
   }
 
   @Transactional
-  public WalletResponse fundWallet(
+  public IdempotentResult<WalletResponse> fundWallet(
       UUID userId, long amountPaise, String source, String idempotencyKey) {
     FundRequest payload = new FundRequest(amountPaise, source);
     return idempotencyService.execute(
@@ -107,13 +111,22 @@ public class WalletService {
           ErrorCode.VALIDATION_FAILED, "Funding amount must be greater than 0");
     }
 
-    Wallet wallet = getOrCreateWallet(userId);
+    // Lock wallet row for update to serialize daily funding calculations and prevent race
+    // conditions (HIGH-4)
+    WalletEntity walletEntity =
+        walletRepository
+            .findByUserIdForUpdate(userId)
+            .orElseGet(
+                () -> {
+                  getOrCreateWallet(userId);
+                  return walletRepository.findByUserIdForUpdate(userId).orElseThrow();
+                });
 
     // Check daily funding limit in UTC
     ZonedDateTime nowUtc = clock.instant().atZone(ZoneOffset.UTC);
     Instant startOfDay = nowUtc.toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant();
 
-    String userMainCode = "USER_MAIN:" + wallet.id();
+    String userMainCode = "USER_MAIN:" + walletEntity.getId();
     Long fundedToday =
         jdbcTemplate.queryForObject(
             """
@@ -128,7 +141,15 @@ public class WalletService {
             Timestamp.from(startOfDay));
 
     long currentFunded = fundedToday != null ? fundedToday : 0L;
-    if (currentFunded + amountPaise > DAILY_FUNDING_LIMIT_PAISE) {
+    long newTotal;
+    try {
+      newTotal = Math.addExact(currentFunded, amountPaise);
+    } catch (ArithmeticException e) {
+      throw new DomainException(
+          ErrorCode.LIMIT_EXCEEDED, "Funding amount overflowed daily limit calculation");
+    }
+
+    if (newTotal > DAILY_FUNDING_LIMIT_PAISE) {
       throw new DomainException(
           ErrorCode.LIMIT_EXCEEDED,
           "Daily funding limit of ₹50,000 exceeded. Currently funded today: ₹"
@@ -152,7 +173,25 @@ public class WalletService {
                 new PostJournalLineCommand("SYS:BANK_SIM_CLEARING", -amountPaise),
                 new PostJournalLineCommand(userMainCode, amountPaise))));
 
-    return getWalletResponse(userId);
+    WalletResponse response = getWalletResponse(userId);
+
+    auditService.log(
+        userId,
+        "WALLET_FUNDED",
+        "WALLET",
+        walletEntity.getId().toString(),
+        Map.of(
+            "amountPaise",
+            amountPaise,
+            "source",
+            source != null ? source : "SIM_BANK",
+            "reference",
+            ref,
+            "newBalance",
+            response.mainBalance()),
+        null);
+
+    return response;
   }
 
   private Wallet toDomain(WalletEntity entity) {

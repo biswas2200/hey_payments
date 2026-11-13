@@ -14,8 +14,10 @@
 }
 
 .back-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--hp-r-full);
   background: transparent;
   border: 1px solid var(--hp-line);
@@ -26,6 +28,11 @@
 
   &:hover {
     background: var(--hp-surface-alt);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--hp-brand);
+    outline-offset: 2px;
   }
 }
 
@@ -38,7 +45,7 @@
 }
 
 .header-spacer {
-  width: 40px;
+  width: 44px;
 }
 
 .lbl {
@@ -80,7 +87,11 @@
   background: var(--hp-surface);
   border: 1.5px solid var(--hp-line);
   border-radius: var(--hp-r-full);
+  min-height: 44px;
   padding: var(--hp-space-2) 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--hp-font-display);
   font-weight: 700;
   font-size: var(--hp-fs-small);
@@ -96,6 +107,11 @@
     background: var(--hp-primary-soft);
     border-color: var(--hp-primary);
     color: var(--hp-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--hp-brand);
+    outline-offset: 2px;
   }
 }
 
@@ -232,4 +248,13 @@
   font-size: var(--hp-fs-amount-lg);
   font-weight: 700;
   color: var(--hp-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .btn,
+  .back-btn {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

@@ -13,6 +13,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -130,6 +131,29 @@ public class GlobalExceptionHandler {
             request.getRequestURI(),
             requestId,
             List.of());
+
+    return ResponseEntity.status(errorCode.getStatusCode())
+        .header("Content-Type", "application/problem+json")
+        .body(body);
+  }
+
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<ProblemResponse> handleMissingHeaderException(
+      MissingRequestHeaderException ex, HttpServletRequest request) {
+
+    String requestId = resolveRequestId();
+    ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
+
+    ProblemResponse body =
+        new ProblemResponse(
+            errorCode.getTypeUri(),
+            errorCode.getTitle(),
+            errorCode.getStatusCode(),
+            errorCode.name(),
+            "Required header missing: " + ex.getHeaderName(),
+            request.getRequestURI(),
+            requestId,
+            List.of(new FieldErrorDetail(ex.getHeaderName(), "Header is required")));
 
     return ResponseEntity.status(errorCode.getStatusCode())
         .header("Content-Type", "application/problem+json")
