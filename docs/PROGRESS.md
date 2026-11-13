@@ -107,7 +107,7 @@ Maintained by the coding agent. Append one section per phase using the template 
 - **Crypto & Signatures (Task 1.1):**
   - Java: `CryptoService` implementing ECDSA P-256 with IEEE P1363 (64-byte `r||s`) signatures (`SHA256withECDSAinP1363Format`), RFC 8785 JSON Canonicalization Scheme (`JcsCanonicalizer`), Argon2id password hashing, and AES-256-GCM symmetric master encryption.
   - TypeScript: Pure TS `crypto.ts`, `jcs.ts`, and `key.service.ts` using WebCrypto ECDSA P-256 with P1363 signatures, non-BMP UTF-16 code unit ordering, IndexedDB structured cloning of non-extractable CryptoKeyPair (`extractable: false`), and PBKDF2 offline PIN hashing (600,000 iterations).
-  - Test vectors: Verified against shared vectors in `test-vectors/p256/` and `test-vectors/argon2/`.
+  - Test vectors: Verified against shared vectors in `test-vectors/jcs.json` and `test-vectors/sign-verify.json` (canonical JSON, RFC 8785 Appendix B numbers, unicode/emoji keys, P1363 signatures, negative cases).
 - **Server Key Discovery & JWKS (Task 1.3):**
   - Database-backed server signing key generation (`V2__auth.sql`, `server_signing_keys` table), daily rotation, and active/retired status lifecycle (`ServerKeyService`).
   - Public JWKS endpoint `GET /api/v1/keys/jwks` (`JwksController`).

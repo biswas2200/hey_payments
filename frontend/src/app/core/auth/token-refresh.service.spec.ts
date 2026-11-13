@@ -25,11 +25,7 @@ describe('TokenRefreshService', () => {
     } as unknown as HttpBackend;
 
     TestBed.configureTestingModule({
-      providers: [
-        TokenStore,
-        { provide: HttpBackend, useValue: mockBackend },
-        TokenRefreshService,
-      ],
+      providers: [TokenStore, { provide: HttpBackend, useValue: mockBackend }, TokenRefreshService],
     });
 
     const refreshService = TestBed.inject(TokenRefreshService);
@@ -48,11 +44,7 @@ describe('TokenRefreshService', () => {
     } as unknown as HttpBackend;
 
     TestBed.configureTestingModule({
-      providers: [
-        TokenStore,
-        { provide: HttpBackend, useValue: mockBackend },
-        TokenRefreshService,
-      ],
+      providers: [TokenStore, { provide: HttpBackend, useValue: mockBackend }, TokenRefreshService],
     });
 
     const refreshService = TestBed.inject(TokenRefreshService);

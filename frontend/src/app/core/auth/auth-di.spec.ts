@@ -1,9 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { describe, expect, it } from 'vitest';
 import { appConfig } from '../../app.config';
-import { KeyService } from '../crypto/key.service';
 import { AuthStore } from './auth.store';
 import { LoginComponent } from '../../features/auth/login/login.component';
 
@@ -44,5 +42,3 @@ describe('Auth Dependency Injection & Routing Configuration', () => {
     }
   });
 });
-
-

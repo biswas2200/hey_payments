@@ -1,5 +1,6 @@
 package com.heypayments.crypto.domain;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
@@ -39,6 +40,9 @@ public class CryptoService {
       new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC", 16);
   private static final BigInteger P256_B =
       new BigInteger("5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B", 16);
+
+  public static final long MAX_SAFE_INTEGER = 9_007_199_254_740_991L; // 2^53 - 1
+  public static final long MIN_SAFE_INTEGER = -9_007_199_254_740_991L;
 
   private final JcsCanonicalizer jcs;
   private final SecureRandom secureRandom;
@@ -179,8 +183,62 @@ public class CryptoService {
     }
   }
 
+  public void validatePayloadNumbers(Object obj) {
+    if (obj instanceof Map<?, ?> map) {
+      for (Object val : map.values()) {
+        validatePayloadNumbers(val);
+      }
+    } else if (obj instanceof Iterable<?> iter) {
+      for (Object val : iter) {
+        validatePayloadNumbers(val);
+      }
+    } else if (obj instanceof Object[] arr) {
+      for (Object val : arr) {
+        validatePayloadNumbers(val);
+      }
+    } else if (obj instanceof Number num) {
+      if (num instanceof Double d) {
+        if (!Double.isFinite(d) || Math.floor(d) != d) {
+          throw new CryptoException("Protocol payload rejected: non-integer number: " + d);
+        }
+        if (d > MAX_SAFE_INTEGER || d < MIN_SAFE_INTEGER) {
+          throw new CryptoException("Protocol payload rejected: integer exceeds 2^53 - 1: " + d);
+        }
+      } else if (num instanceof Float f) {
+        if (!Float.isFinite(f) || Math.floor(f) != f) {
+          throw new CryptoException("Protocol payload rejected: non-integer number: " + f);
+        }
+        if (f > MAX_SAFE_INTEGER || f < MIN_SAFE_INTEGER) {
+          throw new CryptoException("Protocol payload rejected: integer exceeds 2^53 - 1: " + f);
+        }
+      } else if (num instanceof BigDecimal bd) {
+        if (bd.scale() > 0 && bd.stripTrailingZeros().scale() > 0) {
+          throw new CryptoException("Protocol payload rejected: non-integer number: " + bd);
+        }
+        if (bd.compareTo(BigDecimal.valueOf(MAX_SAFE_INTEGER)) > 0
+            || bd.compareTo(BigDecimal.valueOf(MIN_SAFE_INTEGER)) < 0) {
+          throw new CryptoException("Protocol payload rejected: integer exceeds 2^53 - 1: " + bd);
+        }
+      } else if (num instanceof BigInteger bi) {
+        if (bi.compareTo(BigInteger.valueOf(MAX_SAFE_INTEGER)) > 0
+            || bi.compareTo(BigInteger.valueOf(MIN_SAFE_INTEGER)) < 0) {
+          throw new CryptoException("Protocol payload rejected: integer exceeds 2^53 - 1: " + bi);
+        }
+      } else {
+        long val = num.longValue();
+        if (val > MAX_SAFE_INTEGER || val < MIN_SAFE_INTEGER) {
+          throw new CryptoException("Protocol payload rejected: integer exceeds 2^53 - 1: " + val);
+        }
+      }
+    }
+  }
+
   public SignedEnvelope signEnvelope(Map<String, Object> payload, ECPrivateKey privateKey) {
     try {
+      if (payload == null) {
+        throw new CryptoException("Payload cannot be null");
+      }
+      validatePayloadNumbers(payload);
       byte[] canonicalBytes = jcs.canonicalizeToBytes(payload);
       Signature signer = Signature.getInstance(SIGNATURE_ALGORITHM);
       signer.initSign(privateKey);
@@ -190,6 +248,8 @@ public class CryptoService {
       String signatureBase64Url =
           Base64.getUrlEncoder().withoutPadding().encodeToString(signatureBytes);
       return new SignedEnvelope(payload, signatureBase64Url);
+    } catch (CryptoException e) {
+      throw e;
     } catch (Exception e) {
       throw new CryptoException("Failed to sign envelope payload", e);
     }
@@ -197,8 +257,16 @@ public class CryptoService {
 
   public boolean verifyEnvelope(SignedEnvelope envelope, ECPublicKey publicKey) {
     try {
-      byte[] canonicalBytes = jcs.canonicalizeToBytes(envelope.p());
+      if (envelope == null || envelope.p() == null || envelope.s() == null) {
+        return false;
+      }
+      validatePayloadNumbers(envelope.p());
       byte[] signatureBytes = Base64.getUrlDecoder().decode(envelope.s());
+      if (signatureBytes.length != 64) {
+        return false;
+      }
+
+      byte[] canonicalBytes = jcs.canonicalizeToBytes(envelope.p());
 
       Signature verifier = Signature.getInstance(SIGNATURE_ALGORITHM);
       verifier.initVerify(publicKey);

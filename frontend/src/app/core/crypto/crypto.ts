@@ -92,10 +92,30 @@ export async function importPublicKeySec1(sec1: Uint8Array | string): Promise<Cr
   );
 }
 
+export function validatePayloadNumbers(val: unknown): void {
+  if (typeof val === 'number') {
+    if (!Number.isInteger(val)) {
+      throw new Error(`Protocol payload rejected: non-integer number ${val}`);
+    }
+    if (val > Number.MAX_SAFE_INTEGER || val < Number.MIN_SAFE_INTEGER) {
+      throw new Error(`Protocol payload rejected: integer exceeds 2^53 - 1: ${val}`);
+    }
+  } else if (Array.isArray(val)) {
+    for (const item of val) {
+      validatePayloadNumbers(item);
+    }
+  } else if (val !== null && typeof val === 'object') {
+    for (const prop of Object.values(val as Record<string, unknown>)) {
+      validatePayloadNumbers(prop);
+    }
+  }
+}
+
 export async function signEnvelope<T extends Record<string, unknown>>(
   payload: T,
   privateKey: CryptoKey,
 ): Promise<SignedEnvelope<T>> {
+  validatePayloadNumbers(payload);
   const canonical = canonicalize(payload);
   const data = new TextEncoder().encode(canonical);
 
@@ -122,9 +142,16 @@ export async function verifyEnvelope(
   publicKey: CryptoKey,
 ): Promise<boolean> {
   try {
+    if (!envelope || !envelope.p || !envelope.s) {
+      return false;
+    }
+    validatePayloadNumbers(envelope.p);
+    const signatureBytes = base64UrlDecode(envelope.s);
+    if (signatureBytes.length !== 64) {
+      return false;
+    }
     const canonical = canonicalize(envelope.p);
     const data = new TextEncoder().encode(canonical);
-    const signatureBytes = base64UrlDecode(envelope.s);
 
     return await crypto.subtle.verify(
       {

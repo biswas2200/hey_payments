@@ -56,7 +56,8 @@ class TestVectorGeneratorTest {
     assertThat(Files.exists(signVerifyPath)).isTrue();
 
     Map<String, Object> vector =
-        objectMapper.readValue(signVerifyPath.toFile(), new TypeReference<Map<String, Object>>() {});
+        objectMapper.readValue(
+            signVerifyPath.toFile(), new TypeReference<Map<String, Object>>() {});
 
     @SuppressWarnings("unchecked")
     Map<String, String> jwk = (Map<String, String>) vector.get("publicKeyJwk");

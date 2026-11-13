@@ -194,9 +194,7 @@ describe('AuthStore', () => {
   });
 
   it('should logout if refresh session fails', async () => {
-    refreshServiceMock.refreshSession.mockReturnValue(
-      throwError(() => new Error('Token revoked')),
-    );
+    refreshServiceMock.refreshSession.mockReturnValue(throwError(() => new Error('Token revoked')));
 
     await expect(store.refreshSession()).rejects.toBeDefined();
     expect(store.currentUser()).toBeNull();
