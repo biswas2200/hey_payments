@@ -67,8 +67,9 @@ describe('base45Decode', () => {
     expect(() => base45Decode('Ba8')).toThrow(/INVALID_CHAR/);
   });
 
-  it('INVALID_CHAR rejects "*" which is outside the alphabet', () => {
-    expect(() => base45Decode('B*8')).toThrow(/INVALID_CHAR/);
+  it('INVALID_CHAR rejects "~" which is outside the alphabet', () => {
+    // "~" is not in the RFC 9285 Base45 alphabet at all
+    expect(() => base45Decode('B~8')).toThrow(/INVALID_CHAR/);
   });
 
   it('TRIPLET_OVERFLOW rejects a triplet whose value > 65535', () => {
