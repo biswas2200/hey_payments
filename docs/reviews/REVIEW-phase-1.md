@@ -1,3 +1,64 @@
+# Re-review: Phase 1, 2026-11-13 (@ `9389f3d`)
+
+**Verdict: APPROVED WITH CONDITIONS.** All six MUST-FIX items are fixed, and I confirmed each one independently in a running copy of the stack. Fix conditions C1–C4 on `phase/1-auth-devices` and push. Once I've confirmed them, merge to `main` and tag `v0.2.0`. Do not start Phase 2 until then.
+
+**Git:** `phase/1-auth-devices` = origin = `9389f3d` ✅ (25 new commits, TDD `test:` → `fix:` pairs throughout).
+
+## How I checked
+- **Clean worktree at `9389f3d`:**
+  - Backend `./mvnw verify -Dsurefire.runOrder=random` **twice: green** (122 tests, 0 failures, line coverage 90.6%, branch coverage 72.8%).
+  - Frontend `npm ci`, `api:gen` (**no drift**), lint, format and production build: green.
+  - Frontend unit tests **103/103 twice, run while the backend suite was loading the CPU** (the condition that failed last time).
+- **An isolated copy of the stack** (`docker compose -p hpreview`, alternate ports): I tested everything below live through nginx.
+- **Your e2e suite:** 8/8 passed against my copy of the stack. I also ran **my own stricter Playwright spec**, described below.
+
+## MUST-FIX results
+| # | Item | Result |
+|---|---|---|
+| 1 | Circular DI | ✅ Fixed. With `TokenStore` and an `HttpBackend`-based refresh, every auth route renders in the production build. **My strict run:** the payer flow (register → Mailpit OTP → verify → login → device → set PIN → `/pay`, then log in again → `/pay`) and the merchant flow (→ `/merchant`) both work. The device key is `extractable:false`. Unauthenticated `/auth/device-register` and `/auth/set-pin` redirect to login. |
+| 2 | Rate limiting | ✅ Fixed. Through nginx: client A gets 20 × 401, then 429. Client B (a different IP) still gets 401. Spoofed `X-Forwarded-For` values are ignored. The per-phone limit triggers on the 6th attempt across two IPs. The 429 body is `rate-limited` with a `requestId`. |
+| 3 | JWT key | ✅ Fixed. Header `{kid: jwt-…, typ: JWT, alg: ES256}`, `iss: heypayments`. **The token still validates after `docker restart backend`.** An unknown kid gets 401. The JWT kid is **not** in the protocol JWKS. `server_keys.purpose` separates the keys. |
+| 4 | JCS / vectors | ✅ Fixed. erdtman plus `canonicalize`. Vectors now cover RFC 8785 numbers (`1e+21`, `1e-7`, `-0`, max-safe), unicode/emoji, escapes, and negative cases (tampered payload, wrong key, malformed signature length, non-integer, overflow). Both Java and TS consume them. Non-integer and unsafe numbers are rejected on sign and verify. |
+| 5 | Generated client / contract | ✅ Accepted. `ng-openapi-gen` with a CI drift check. The contract test checks paths and methods only, not schemas. The calls that remain hand-written (`verify-otp`, `logout`, `devices/me`, `auth/pin`) exist only because `openapi.yaml` lacks them. **Architect action:** I'll merge proposals 002 and 003 into `openapi.yaml`. Then regenerate, delete the remaining raw calls and extend the contract test to cover schemas (do this in Phase 2). |
+| 6 | Flaky tests | ✅ Fixed. Injectable PBKDF2, single worker, 15 s timeout. Green under load twice. |
+
+SHOULD-FIX: all handled ✅. `PENDING_VERIFICATION` with LOCKED/DISABLED blocked from OTP. 90-day rotation check. Cookie `Path=/api/v1/auth` (confirmed in `Set-Cookie`). `Origin` check (an evil origin on refresh gets 403). PIN moved to Dexie `meta` with a lockout (confirmed in the browser: `pin_salt`, `pin_hash`, `pin_failed_attempts`, `pin_lockout_until`, localStorage empty). `MessageDigest.isEqual`. No phone numbers in logs.
+
+## CONDITIONS (fix on this branch, then push)
+### C1. `e2e/auth.spec.ts` can't fail on the things it claims to test
+Your suite passes, and my stricter spec shows the flows really work. But the assertions as written would stay green if they broke:
+- Both flows accept `/auth/login` as the final URL (`url.pathname.includes('/pay') || …'/auth/login'`). **A failed login passes.** Assert `/pay` for payers and `/merchant` for merchants only.
+- The PIN check resolves `'stored'` when the `meta` store is missing or a read errors, so it is always truthy. Assert that `pin_salt` and `pin_hash` exist in `meta` and that `localStorage` has no `hp_pin_*` keys.
+- The "MC verified via JWKS" check never calls `crypto.subtle.verify`; it only checks that the signature is 64 bytes. Canonicalise `envelope.p` and verify it against the JWKS key. Also assert that a mutated payload fails.
+- The payer test title says "logout → login again", but those steps are missing. Add them after C2.
+- The console filter drops every message containing `"404"`. Instead, allow only the one expected `GET /devices/me` 404 by URL, or better, make `devices/me` return `204` or `{device:null}` when no device exists and drop the filter.
+- The "every auth route" test covers only 3 routes. Add `device-register` and `set-pin`: unauthenticated they must redirect to login; authenticated they must render the form.
+- Assert `extractable === false` on the stored device key.
+(My strict spec is a working reference for the MC verification and the Dexie checks.)
+
+### C2. There's no way to log out in the UI
+`AuthStore.logout()` exists, but no screen calls it (`/pay` and `/merchant` have no logout control). Add a logout action to the post-login placeholder: lucide `log-out` icon plus a label, using the ui-spec button styles. Cover it with the C1 e2e test (log out → `/auth/login`, refresh cookie cleared, log in again → landing page).
+
+### C3. The Dexie schema changed without a version bump
+`meta` was added inside `this.version(1)`. Any browser that opened the Phase 1 build before this change keeps a v1 database without `meta`, and PIN storage fails. Keep version 1 as it was, add `this.version(2).stores({ meta: 'key' })`, and add a unit test that opens a v1 database (fake-indexeddb) and then upgrades it.
+
+### C4. Correct PROGRESS
+PROGRESS cites `${hp.crypto.server-key.rotation-cron:0 0 2 * * ?}`, but the code uses `${app.crypto.key-rotation-cron:0 0 0 * * ?}`. Pick one name (use `hp.crypto.*`, to match the other `HP_` settings), put it in `application.yml`, and make PROGRESS match.
+
+## Notes (no action needed for the gate; carry into PROGRESS as tracked items)
+- **Migrations:** `V3__devices_merchants.sql` was edited in place (adding the `purpose` column). That's OK this time because V3 never reached `main`. From now on, a migration that has run anywhere (including your dev DB) is immutable; add a new `V<n>`.
+- **JWT performance:** every request does a DB lookup and SEC1 decode for verification, and every token issue decrypts the private key. Cache public keys by kid and the active private key in memory (with eviction on rotation) before the Phase 8 p95 target.
+- **Retiring keys** are never moved to `REVOKED` once their validity ends, so the JWKS will grow. Add cleanup with the next crypto work.
+- **CORS and Origin allow-lists** are hard-coded (`localhost`, `127.0.0.1`, `nginx`). `.env.example` has `HP_CORS_ORIGINS` and `HP_JWT_ISSUER`, but nothing reads them. Wire them in (needed for the Phase 8 LAN demo) or remove them.
+- **Phase 4 UI notes:** the device-register card sits ~330 px below the header with empty space above it. The header tagline "Offline-First Payment Gateway Architecture" and the `/pay` placeholder copy are developer text. Both get replaced when P1 Home and the auth screens are matched to `reference/screens/*`.
+
+## Resubmission checklist
+- [ ] C1–C4, each with a `test:` → `fix:` pair where applicable
+- [ ] `make lint`, `make test`, `make e2e` green
+- [ ] `git push origin phase/1-auth-devices`, then "Phase 1 conditions done"
+
+---
+
 # Review: Phase 1 (Auth, users, devices), 2026-11-13 (@ `e0d1045`)
 
 **Verdict: CHANGES REQUIRED.** The backend is strong. **The Phase 1 frontend does not work in the deployed app**, which fails the phase acceptance criterion ("register payer + merchant via UI"). Fix MUST-FIX 1–6 test-first, then resubmit. Do not start Phase 2.
