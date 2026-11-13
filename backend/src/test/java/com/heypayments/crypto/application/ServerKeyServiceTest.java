@@ -77,4 +77,26 @@ class ServerKeyServiceTest extends BaseIntegrationTest {
     List<Map<String, Object>> keys = (List<Map<String, Object>>) jwks.get("keys");
     assertThat(keys).extracting(k -> k.get("kid")).contains(current.kid(), rotated.kid());
   }
+
+  @Test
+  @DisplayName("should automatically rotate keys past 90 days during scheduledKeyRotation")
+  void shouldRotateKeysOnScheduleWhenPast90Days() {
+    ServerKey current = serverKeyService.getActiveSigningKey();
+    var entity = serverKeyRepository.findById(current.kid()).orElseThrow();
+
+    // Key is young (< 90 days) -> should not rotate
+    serverKeyService.scheduledKeyRotation();
+    assertThat(serverKeyService.getActiveSigningKey().kid()).isEqualTo(current.kid());
+
+    // Age the key past 90 days
+    entity.setCreatedAt(java.time.Instant.now().minus(91, java.time.temporal.ChronoUnit.DAYS));
+    serverKeyRepository.save(entity);
+
+    serverKeyService.scheduledKeyRotation();
+    ServerKey newKey = serverKeyService.getActiveSigningKey();
+    assertThat(newKey.kid()).isNotEqualTo(current.kid());
+
+    var retiredEntity = serverKeyRepository.findById(current.kid()).orElseThrow();
+    assertThat(retiredEntity.getStatus()).isEqualTo(ServerKeyStatus.RETIRING);
+  }
 }
