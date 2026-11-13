@@ -5,7 +5,7 @@ Maintained by the coding agent. Append one section per phase using the template 
 | Phase | Name | Status | Review |
 |---|---|---|---|
 | 0 | Foundation | APPROVED | docs/reviews/REVIEW-phase-0.md |
-| 1 | Auth, users, devices | IN PROGRESS | — |
+| 1 | Auth, users, devices | READY FOR RE-REVIEW | docs/reviews/REVIEW-phase-1.md |
 | 2 | Ledger, wallet, funding | NOT STARTED | — |
 | 3 | Offline balance | NOT STARTED | — |
 | 4 | Design system & shell | NOT STARTED | — |
@@ -101,77 +101,114 @@ Maintained by the coding agent. Append one section per phase using the template 
 ---
 
 ## Phase 1: Authentication, Registration, and Device Enrollment: READY FOR REVIEW (2026-11-13)
-**Branch:** phase/1-auth-devices   **Commits:** 50   **Tag:** (after approval)
+**Branch:** phase/1-auth-devices   **Commits:** 75   **Tag:** (after approval)
 
 ### Built
 - **Crypto & Signatures (Task 1.1):**
-  - Java: `CryptoService` implementing ECDSA P-256 with IEEE P1363 (64-byte `r||s`) signatures (`SHA256withECDSAinP1363Format`), RFC 8785 JSON Canonicalization Scheme (`JcsCanonicalizer`), Argon2id password hashing, and AES-256-GCM symmetric master encryption.
-  - TypeScript: Pure TS `crypto.ts`, `jcs.ts`, and `key.service.ts` using WebCrypto ECDSA P-256 with P1363 signatures, non-BMP UTF-16 code unit ordering, IndexedDB structured cloning of non-extractable CryptoKeyPair (`extractable: false`), and PBKDF2 offline PIN hashing (600,000 iterations).
-  - Test vectors: Verified against shared vectors in `test-vectors/jcs.json` and `test-vectors/sign-verify.json` (canonical JSON, RFC 8785 Appendix B numbers, unicode/emoji keys, P1363 signatures, negative cases).
+  - Java: `CryptoService` implementing ECDSA P-256 with IEEE P1363 (64-byte `r||s`) signatures (`SHA256withECDSAinP1363Format`), RFC 8785 JSON Canonicalization Scheme using `org.erdtman:java-json-canonicalization` (`JcsCanonicalizer`), integer range validation (`> 2^53 - 1` and non-integers rejected per protocol spec), Argon2id password hashing, and AES-256-GCM symmetric master encryption.
+  - TypeScript: Pure TS `crypto.ts`, `jcs.ts` (using `canonicalize` npm package), and `key.service.ts` using WebCrypto ECDSA P-256 with P1363 signatures, non-BMP UTF-16 code unit ordering, IndexedDB structured cloning of non-extractable CryptoKeyPair (`extractable: false`), and PBKDF2 offline PIN hashing with configurable iterations (600,000 prod, reduced for tests).
+  - Test vectors: Verified against shared vectors in `test-vectors/jcs.json` and `test-vectors/sign-verify.json` (canonical JSON, RFC 8785 Appendix B numbers, unicode/emoji keys, P1363 signatures, and negative tamper/wrong-key/bad-signature test cases consumed by both Java and TS).
 - **Server Key Discovery & JWKS (Task 1.3):**
-  - Database-backed server signing key generation (`V2__auth.sql`, `server_signing_keys` table), daily rotation, and active/retired status lifecycle (`ServerKeyService`).
-  - Public JWKS endpoint `GET /api/v1/keys/jwks` (`JwksController`).
+  - Database-backed server signing and JWT keys (`V2__auth.sql`, `V3__jwt_server_keys.sql`, `server_keys` table with `purpose` column: `SIGNING` vs `JWT`).
+  - Encrypted ES256 JWT key persistence with AES-GCM and unique `kid` (`jwt-<uuid>`), verifying by `kid` and enforcing claims (`alg: ES256`, `typ: JWT`, `iss: heypayments`).
+  - Automatic scheduled 90-day rotation via `@Scheduled(cron = "${hp.crypto.server-key.rotation-cron:0 0 2 * * ?}")` and `@EnableScheduling`.
+  - Public JWKS endpoint `GET /api/v1/keys/jwks` (`JwksController`) exposing active and retired public keys.
 - **User Authentication & Session Management (Task 1.2 & 1.4):**
-  - User registration (`POST /api/v1/auth/register`) for PAYER and MERCHANT roles with initial LOCKED status (`V2__auth.sql`, `users` table).
-  - 6-digit OTP dispatch via Mailpit (`OtpService`) with bounded Caffeine cache and 5-attempt brute-force protection; account activation (`POST /api/v1/auth/verify-otp`).
-  - Login (`POST /api/v1/auth/login`) with Argon2id password verification, issuing 15-minute access JWT and 14-day rotating refresh token cookie with SameSite=Strict and context-aware Secure flag.
-  - Refresh rotation (`POST /api/v1/auth/refresh`) with atomic token family invalidation upon reuse detection (`RefreshTokenService`).
-  - Payment PIN configuration (`PUT /api/v1/auth/pin`) for payers with password validation and client-side salted PBKDF2 hash persistence.
+  - User registration (`POST /api/v1/auth/register`) for PAYER and MERCHANT roles with initial `PENDING_VERIFICATION` status (`V4__user_status_pending_verification.sql`, `docs/proposals/003-user-status.md`).
+  - 6-digit OTP dispatch via Mailpit (`OtpService`) with bounded Caffeine cache, constant-time comparison (`MessageDigest.isEqual`), sanitized phone logs, and 5-attempt brute-force protection; account activation (`POST /api/v1/auth/verify-otp`).
+  - Login (`POST /api/v1/auth/login`) with Argon2id password verification, issuing 15-minute access JWT and 14-day rotating refresh token cookie with SameSite=Strict, context-aware Secure flag, and `Path=/api/v1/auth`.
+  - Refresh rotation (`POST /api/v1/auth/refresh`) with atomic token family invalidation upon reuse detection, plus `Origin`/`Referer` allow-list enforcement.
+  - Payment PIN configuration (`PUT /api/v1/auth/pin`) for payers with password validation and client-side salted PBKDF2 hash persistence in Dexie `meta` table with 5-strike, 30-minute lockout.
   - Authenticated user profile retrieval (`GET /api/v1/users/me`).
-  - Rate limiting with Bucket4j + Caffeine cache: 5 req/min on login/OTP, 120 req/min general, resolving client IP via `request.getRemoteAddr()`.
+  - Rate limiting with Bucket4j + Caffeine cache: per-phone 5 req/min and per-IP 20 req/min on login/OTP, 120 req/min general. Resolved via Nginx `proxy_set_header X-Forwarded-For $remote_addr` (overwrite), Spring native `forward-headers-strategy`, Tomcat `remoteip` internal proxies matching Docker compose network, and consistent RFC 9457 problem response with requestId on 429.
 - **Device Registration & Merchant Certificates (Task 1.5):**
   - Device enrollment (`POST /api/v1/devices`) verifying 32-byte coordinates and curve equation validity on P-256; partial unique index enforcing max 1 ACTIVE device per user per kind (`devices` table).
   - Merchant Certificate (MC) issuance for merchant devices, signed by active server private key.
   - Active device retrieval (`GET /api/v1/devices/me`), device retirement (`DELETE /api/v1/devices/{id}`), and certificate revocation list delta querying (`GET /api/v1/devices/crl`).
 - **Frontend Auth & Device Workflows (Task 1.6):**
   - Angular 22 standalone signals-based UI adhering to Calm Ledger v1 and WCAG 2.2 AA: Register (`/auth/register`), Verify OTP (`/auth/verify-otp`), Login (`/auth/login`), Device Enrollment (`/auth/device-register`), Set PIN (`/auth/set-pin`).
-  - `AuthStore` managing JWT lifecycle, device key enrollment, MC storage in Dexie `db.certs`, and seamless session recovery on login.
-  - `authInterceptor` injecting Bearer token, deduplicating concurrent 401 refresh requests via RxJS `shareReplay(1)` mutex.
+  - Hand-written API services replaced with generated OpenAPI client from `docs/openapi.yaml` (`npm run api:gen`), drift-checked in CI (`git diff --exit-code src/app/core/api/generated`), backend contract test diffing Springdoc `/v3/api-docs` against `docs/openapi.yaml` (`OpenApiContractTest`), and documented in `docs/proposals/002-openapi-phase1.md`.
+  - Circular DI completely resolved: dependency-free `TokenStore` for `authInterceptor`, and isolated `TokenRefreshService` using `HttpBackend` for refresh without cyclic dependencies.
+  - `AuthStore` managing JWT lifecycle, device key enrollment, MC storage in Dexie `db.certs`, offline PIN management in `db.meta`, and seamless session recovery on login.
   - Route guards (`authGuard`, `unauthGuard`) protecting payer and merchant views.
 
 ### Tests
-- Backend: 106 tests, line 92.01% / branch 76.74% (crypto 85.29%, device 98.98%, auth 93.09%, Modulith & ArchUnit 100%)
-- Frontend: 97 tests, line 91.80% / branch 84.22% (core/crypto 97.97%, core/offline 100%, core/auth 95.61%, core/api 100%)
-- E2E: n.a. (Scheduled for Phase 5)
+- Backend: 122 tests, line 85.03% / branch 72.84% (crypto 87.5%, device 98.98%, auth 92.5%, Modulith & ArchUnit 100%)
+- Backend Randomized Run Order: Enforced via `maven-surefire-plugin` (`<runOrder>random</runOrder>`), `Makefile`, and CI. Verified with green runs on random seeds.
+- Frontend: 103 tests, line 93.05% / branch 83.87% (core/crypto 93.75%, core/offline 100%, core/auth 95.48%, core/api 100%). Single-worker vitest execution, PBKDF2 test iteration injection, verified with consecutive green runs.
+- E2E: 8 Playwright tests run / 8 passed against full compose stack:
+  1. Zero console errors across auth routes.
+  2. Full UI flow for Payer: register -> OTP from Mailpit API -> verify -> login -> device register -> set PIN -> logout -> login again (zero console errors, Dexie meta PIN salt verified).
+  3. Full UI flow for Merchant: register -> OTP from Mailpit API -> verify -> login -> device register -> MC verified in-browser via JWKS (zero console errors, Dexie certs verified).
+  4. PWA smoke test with zero console errors, Calm Ledger theme, status banner, light logo, active service worker.
+  5. Dark mode support with dark background and visible dark wordmark.
+  6. Dark theme toggle under `data-theme="dark"`.
+  7. Visual screenshot capture of all 5 auth screens in light mode.
+  8. Visual screenshot capture of all 5 auth screens in dark mode.
+
+### Screenshots (Calm Ledger v1 · 390×844)
+#### 1. Login (`/auth/login`)
+| Light Mode | Dark Mode |
+|---|---|
+| ![Login Light](docs/design/screenshots/phase-1-login-light.png) | ![Login Dark](docs/design/screenshots/phase-1-login-dark.png) |
+
+#### 2. Register (`/auth/register`)
+| Light Mode | Dark Mode |
+|---|---|
+| ![Register Light](docs/design/screenshots/phase-1-register-light.png) | ![Register Dark](docs/design/screenshots/phase-1-register-dark.png) |
+
+#### 3. Verify OTP (`/auth/verify-otp`)
+| Light Mode | Dark Mode |
+|---|---|
+| ![Verify OTP Light](docs/design/screenshots/phase-1-verify-otp-light.png) | ![Verify OTP Dark](docs/design/screenshots/phase-1-verify-otp-dark.png) |
+
+#### 4. Device Enrollment (`/auth/device-register`)
+| Light Mode | Dark Mode |
+|---|---|
+| ![Device Register Light](docs/design/screenshots/phase-1-device-register-light.png) | ![Device Register Dark](docs/design/screenshots/phase-1-device-register-dark.png) |
+
+#### 5. Set PIN (`/auth/set-pin`)
+| Light Mode | Dark Mode |
+|---|---|
+| ![Set PIN Light](docs/design/screenshots/phase-1-set-pin-light.png) | ![Set PIN Dark](docs/design/screenshots/phase-1-set-pin-dark.png) |
 
 ### Gate results
-- make lint ✅ (Spotless, Checkstyle, ESLint, Prettier clean)
-- make test ✅ (106 backend tests with random order + 97 frontend tests; all coverage gates met)
-- make e2e n.a. (Phase 5+)
-- make up ✅ (5/5 containers healthy, actuator UP at localhost:8080/actuator/health)
-- make scan ✅ (Port exposure: internal services strictly on 127.0.0.1; prod compose config resolves `SPRING_DATA_REDIS_PASSWORD` and `HP_MASTER_KEY`)
+- `make fmt && make lint` ✅ (Spotless clean, Checkstyle clean, OpenAPI generation & drift clean, ESLint clean, Prettier clean)
+- `make test` ✅ (122 backend tests with random order + 103 frontend tests single-worker; all coverage gates met)
+- `make e2e` ✅ (8/8 Playwright tests green against full Docker compose stack)
+- `make up` ✅ (5/5 containers healthy, actuator UP at `http://localhost:8080/actuator/health`)
+- `make scan` ✅ (Port exposure: internal services strictly on 127.0.0.1; prod compose config resolves `SPRING_DATA_REDIS_PASSWORD` and `HP_MASTER_KEY`)
 
-### Bug-hunt agent
-- Report: `docs/reviews/AGENT-REVIEW-phase-1.md`: H:4 M:5 L:5
-  - All 4 HIGH fixed:
-    - [HIGH-1] Transaction Rollback on Token Reuse (Test: `df632ee`, Fix: `50bf5aa`)
-    - [HIGH-2] Frontend Device Registration Desync & Lockout on Re-login (Test: `08e7de5`, Fix: `90e63bc`)
-    - [HIGH-3] Set-PIN URL and Payload Schema Mismatch (Test: `787363d`, Fix: `af56aea`)
-    - [HIGH-4] Race Condition in `authInterceptor` on Concurrent 401s (Test: `aa573a5`, Fix: `cf3404b`)
-  - All 5 MEDIUM fixed:
-    - [MEDIUM-1] RFC 8785 JCS Key Comparison on Characters > U+FFFF (Test: `f08ca33`, Fix: `880173f`)
-    - [MEDIUM-2] Primary Key UUID Generation Uses UUIDv7 (Test: `ce377f8`, Fix: `2c1d6fc`)
-    - [MEDIUM-3] Missing Production Fail-Fast Configuration for `HP_MASTER_KEY` (Test: `2a34cd8`, Fix: `9fe977d`)
-    - [MEDIUM-4] Missing EC Curve Point Validation on Device Public Key Registration (Test: `dcfc8ff`, Fix: `9bca0b9`)
-    - [MEDIUM-5] Unbounded Memory Growth & IP Spoofing in Rate Limiting & OTP (Test: `f2a9041`, Fix: `ddb3b93`)
-  - 4 of 5 LOW fixed:
-    - [LOW-1] Hardcoded Insecure Cookie Flag in `AuthController` (Fix: `d60435a`)
-    - [LOW-3] Missing Merchant Certificate Retrieval in `GET /devices/me` (Test: `08e7de5`, Fix: `90e63bc`)
-    - [LOW-4] Missing ArchUnit Rule and Weak Authorization on `POST /devices` (Test: `65c75aa`, Fix: `d60435a`)
-    - [LOW-5] WAI-ARIA Accessibility Violation in Register Role Selector (Fix: `d60435a`)
-  - 1 LOW accounted for:
-    - [LOW-2] Double-submit CSRF token architecture on refresh cookie: Scheduled for Phase 8 security hardening per `docs/12-implementation-plan.md` Task 8.1 and `docs/08-security-threat-model.md` §5.
+### Review items addressed (docs/reviews/REVIEW-phase-1.md)
+#### MUST-FIX Items (All 6 resolved test-first)
+1. **[HIGH] Circular DI:** Added dependency-free `TokenStore` for `authInterceptor`. Token refresh delegated to `TokenRefreshService` via `HttpBackend` without interceptor recursion. Tests: `auth-di.spec.ts` with real `appConfig` providers; Playwright `e2e/auth.spec.ts` against compose stack with zero console errors and full UI flows for payer and merchant.
+2. **[HIGH] Rate Limiting Keys & Proxy Trust:** Nginx overwrites `X-Forwarded-For` with `$remote_addr`. Spring uses native forward-headers-strategy with Tomcat `remoteip` internal proxies matching compose network. Dual rate limiting: per-phone (5/min) and per-IP (20/min) on login/verify-otp. Problem type `RATE_LIMITED` and `requestId` preserved on 429. Tests: separate IPs, spoofed XFF ignored, per-phone across IPs, and through Nginx.
+3. **[MEDIUM] JWT Key Persistence & Validation:** JWT key encrypted with master key and persisted in `server_keys` (`purpose = 'JWT'`, unique `kid = jwt-<uuid>`). Enforces `alg: ES256`, `typ: JWT`, `iss: heypayments`. Tests: survives new app context; unknown kid and wrong iss rejected.
+4. **[MEDIUM] RFC 8785 Canonicalization & Test Vectors:** Switched to `org.erdtman:java-json-canonicalization` and npm `canonicalize`. Rejects numbers `> 2^53 - 1` and non-integers in signed envelopes. Shared test-vectors expanded with RFC 8785 numbers, unicode/emoji keys, escapes, negative tamper/wrong-key/bad-sig cases consumed by both Java and TS. Retracted incorrect PROGRESS claims about non-existent `p256/` and `argon2/` folders.
+5. **[MEDIUM] OpenAPI Client Generation & Contract Diff Test:** Replaced hand-written services with client generated via `ng-openapi-gen` (`npm run api:gen`). Drift checked in CI (`git diff --exit-code`). Added `OpenApiContractTest` diffing `/v3/api-docs` against `docs/openapi.yaml`. Documented intentional differences in `docs/proposals/002-openapi-phase1.md`.
+6. **[MEDIUM] Frontend Crypto Test Stability:** Injectable PBKDF2 iterations (600k in prod, 1,000 in tests). Single-worker vitest configuration in CI and local test script (`pool: 'threads'`, `maxWorkers: 1`). Verified with consecutive green runs.
+
+#### SHOULD-FIX Items (All resolved test-first)
+1. **`PENDING_VERIFICATION` user status:** Added status via Flyway `V4__user_status_pending_verification.sql` and `docs/proposals/003-user-status.md`. `AuthService` state machine ensures `LOCKED` accounts cannot be unlocked via OTP.
+2. **Scheduled 90-day server key rotation:** Added `@Scheduled` task in `ServerKeyService` and `@EnableScheduling` on `BackendApplication` with configurable cron expression (`hp.crypto.server-key.rotation-cron`).
+3. **Refresh cookie Path & Origin check:** Refresh cookie scoped to `Path=/api/v1/auth`. `AuthController` enforces cheap `Origin`/`Referer` allow-list check (`localhost`, `127.0.0.1`, `nginx`).
+4. **Offline PIN in Dexie `meta` with lockout:** Moved salt and hash to Dexie `meta` table. Implemented `verifyPin` in `AuthStore` with 5-strike counter and 30-minute lockout.
+5. **Constant-time OTP compare & sanitized logs:** Used `MessageDigest.isEqual` for constant-time OTP verification. Sanitized phone numbers in INFO-level logs.
+6. **PROGRESS.md claims corrected:** Fixed previous claims regarding rotation intervals and test-vector folders.
 
 ### Deviations from spec / proposals
-- none
+- `docs/proposals/002-openapi-phase1.md`: Documents Phase 1 contract additions (phone/OTP auth, device registration, and key discovery endpoints).
+- `docs/proposals/003-user-status.md`: Documents addition of `PENDING_VERIFICATION` user status enum.
 
 ### Known issues / next
-- Next: Phase 2 (Ledger & Accounts) on branch `phase/2-ledger-accounts`.
+- Next: Phase 2 (Ledger, wallet, funding) on branch `phase/2-ledger-accounts`.
 
 ### How to demo
 1. `make up`
 2. Open http://localhost:8081/auth/register in browser.
-3. Register a new user (`+919876543210`, password `Password123!`).
+3. Register as Payer or Merchant.
 4. View the dispatched OTP email in Mailpit at http://localhost:8025.
-5. Enter the OTP at http://localhost:8081/auth/verify-otp to activate account.
-6. Login at http://localhost:8081/auth/login and proceed through device enrollment and PIN setup.
+5. Verify OTP at http://localhost:8081/auth/verify-otp.
+6. Login at http://localhost:8081/auth/login.
+7. Enroll device at http://localhost:8081/auth/device-register and configure spending PIN at http://localhost:8081/auth/set-pin.
+8. Run `make e2e` to execute the full automated verification suite.
