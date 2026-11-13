@@ -1,5 +1,5 @@
 # 002: Alignment of Phase 1 Auth and Device Endpoints in openapi.yaml
-Status: PROPOSED
+Status: ACCEPTED (2026-11-13, merged into docs/openapi.yaml by the architect)
 
 ## Problem
 During Phase 1 implementation and automated contract testing, several discrepancies were identified between `docs/openapi.yaml` and `docs/06-api-spec.md`:

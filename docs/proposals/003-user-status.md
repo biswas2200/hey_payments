@@ -1,5 +1,5 @@
 # 003: User Status PENDING_VERIFICATION Lifecycle
-Status: PROPOSED
+Status: ACCEPTED (2026-11-13, merged into docs/openapi.yaml by the architect)
 
 ## Problem
 In `docs/05-data-model.md`, `users.status` includes `ACTIVE`, `LOCKED`, and `DISABLED`. Currently, newly registered accounts are assigned `LOCKED` until OTP verification. However, `LOCKED` is designated in doc 05 §2.1 and doc 08 as the fraud-freeze and security lockout state. Setting newly registered users to `LOCKED` and transitioning `LOCKED -> ACTIVE` unconditionally on OTP verification creates a severe security flaw: a fraud-locked user could request an OTP and unlock their account.

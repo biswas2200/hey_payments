@@ -14,6 +14,10 @@ import { Crl } from '../models/crl';
 import { DeviceResponse } from '../models/device-response';
 import { devicesCrlGet } from '../fn/devices/devices-crl-get';
 import { DevicesCrlGet$Params } from '../fn/devices/devices-crl-get';
+import { devicesIdDelete } from '../fn/devices/devices-id-delete';
+import { DevicesIdDelete$Params } from '../fn/devices/devices-id-delete';
+import { devicesMeGet } from '../fn/devices/devices-me-get';
+import { DevicesMeGet$Params } from '../fn/devices/devices-me-get';
 import { devicesPost } from '../fn/devices/devices-post';
 import { DevicesPost$Params } from '../fn/devices/devices-post';
 import { Jwks } from '../models/jwks';
@@ -77,6 +81,60 @@ export class DevicesService extends BaseService {
     const resp = this.devicesPost$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<DeviceResponse>): DeviceResponse => r.body)
+    );
+  }
+
+  /** Path part for operation `devicesMeGet()` */
+  static readonly DevicesMeGetPath = '/devices/me';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `devicesMeGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  devicesMeGet$Response(params?: DevicesMeGet$Params, context?: HttpContext): Observable<StrictHttpResponse<DeviceResponse>> {
+    const obs = devicesMeGet(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `devicesMeGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  devicesMeGet(params?: DevicesMeGet$Params, context?: HttpContext): Observable<DeviceResponse> {
+    const resp = this.devicesMeGet$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<DeviceResponse>): DeviceResponse => r.body)
+    );
+  }
+
+  /** Path part for operation `devicesIdDelete()` */
+  static readonly DevicesIdDeletePath = '/devices/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `devicesIdDelete()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  devicesIdDelete$Response(params: DevicesIdDelete$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = devicesIdDelete(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `devicesIdDelete$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  devicesIdDelete(params: DevicesIdDelete$Params, context?: HttpContext): Observable<void> {
+    const resp = this.devicesIdDelete$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
     );
   }
 
