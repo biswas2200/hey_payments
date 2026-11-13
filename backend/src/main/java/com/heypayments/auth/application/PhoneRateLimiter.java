@@ -12,8 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * In-memory per-phone rate limiter for login and OTP verification.
- * Enforces 5 requests per minute per phone number across all IP addresses.
+ * In-memory per-phone rate limiter for login and OTP verification. Enforces 5 requests per minute
+ * per phone number across all IP addresses.
  */
 @Slf4j
 @Component
@@ -31,7 +31,8 @@ public class PhoneRateLimiter {
     if (!bucket.tryConsume(1)) {
       log.warn("Per-phone rate limit exceeded for phone=[PROTECTED]");
       throw new DomainException(
-          ErrorCode.RATE_LIMITED, "Too many requests for this phone number. Please try again later.");
+          ErrorCode.RATE_LIMITED,
+          "Too many requests for this phone number. Please try again later.");
     }
   }
 

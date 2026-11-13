@@ -25,7 +25,9 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
 
   @Autowired private WebApplicationContext context;
   @Autowired private RateLimitingFilter rateLimitingFilter;
-  @Autowired(required = false) private PhoneRateLimiter phoneRateLimiter;
+
+  @Autowired(required = false)
+  private PhoneRateLimiter phoneRateLimiter;
 
   private MockMvc mockMvc;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -62,10 +64,11 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
       mockMvc
           .perform(
               post("/api/v1/auth/login")
-                  .with(request -> {
-                    request.setRemoteAddr(clientIp1);
-                    return request;
-                  })
+                  .with(
+                      request -> {
+                        request.setRemoteAddr(clientIp1);
+                        return request;
+                      })
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotEqualTo(429));
@@ -76,10 +79,11 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/api/v1/auth/login")
-                .with(request -> {
-                  request.setRemoteAddr(clientIp1);
-                  return request;
-                })
+                .with(
+                    request -> {
+                      request.setRemoteAddr(clientIp1);
+                      return request;
+                    })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req21)))
         .andExpect(status().isTooManyRequests())
@@ -91,10 +95,11 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/api/v1/auth/login")
-                .with(request -> {
-                  request.setRemoteAddr(clientIp2);
-                  return request;
-                })
+                .with(
+                    request -> {
+                      request.setRemoteAddr(clientIp2);
+                      return request;
+                    })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(reqClient2)))
         .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotEqualTo(429));
@@ -113,10 +118,11 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
       mockMvc
           .perform(
               post("/api/v1/auth/login")
-                  .with(request -> {
-                    request.setRemoteAddr(ip);
-                    return request;
-                  })
+                  .with(
+                      request -> {
+                        request.setRemoteAddr(ip);
+                        return request;
+                      })
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(body))
           .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotEqualTo(429));
@@ -126,10 +132,11 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/api/v1/auth/login")
-                .with(request -> {
-                  request.setRemoteAddr("10.0.1.6");
-                  return request;
-                })
+                .with(
+                    request -> {
+                      request.setRemoteAddr("10.0.1.6");
+                      return request;
+                    })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isTooManyRequests())
@@ -149,25 +156,28 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
       mockMvc
           .perform(
               post("/api/v1/auth/login")
-                  .with(request -> {
-                    request.setRemoteAddr(untrustedRemoteIp);
-                    return request;
-                  })
+                  .with(
+                      request -> {
+                        request.setRemoteAddr(untrustedRemoteIp);
+                        return request;
+                      })
                   .header("X-Forwarded-For", "198.51.100." + i)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(req)))
           .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotEqualTo(429));
     }
 
-    // 21st request with yet another spoofed IP must STILL be rate limited because untrusted remote IP is keyed
+    // 21st request with yet another spoofed IP must STILL be rate limited because untrusted remote
+    // IP is keyed
     LoginRequest req21 = new LoginRequest("+919222222299", "Pwd1234567!");
     mockMvc
         .perform(
             post("/api/v1/auth/login")
-                .with(request -> {
-                  request.setRemoteAddr(untrustedRemoteIp);
-                  return request;
-                })
+                .with(
+                    request -> {
+                      request.setRemoteAddr(untrustedRemoteIp);
+                      return request;
+                    })
                 .header("X-Forwarded-For", "1.2.3.4")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req21)))
@@ -183,10 +193,11 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
       LoginRequest req = new LoginRequest("+9188888000" + String.format("%02d", i), "Pwd1234567!");
       mockMvc.perform(
           post("/api/v1/auth/login")
-              .with(request -> {
-                request.setRemoteAddr(clientIp);
-                return request;
-              })
+              .with(
+                  request -> {
+                    request.setRemoteAddr(clientIp);
+                    return request;
+                  })
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(req)));
     }
@@ -195,10 +206,11 @@ class RateLimitingFilterTest extends BaseIntegrationTest {
     mockMvc
         .perform(
             post("/api/v1/auth/login")
-                .with(request -> {
-                  request.setRemoteAddr(clientIp);
-                  return request;
-                })
+                .with(
+                    request -> {
+                      request.setRemoteAddr(clientIp);
+                      return request;
+                    })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(reqExceeded)))
         .andExpect(status().isTooManyRequests())

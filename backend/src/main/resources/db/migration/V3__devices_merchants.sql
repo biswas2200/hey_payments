@@ -38,12 +38,16 @@ CREATE TABLE merchants (
 
 CREATE TABLE server_keys (
     kid VARCHAR(50) PRIMARY KEY,
+    purpose VARCHAR(20) NOT NULL DEFAULT 'PROTOCOL',
     public_key BYTEA NOT NULL,
     private_key_enc BYTEA NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     not_before TIMESTAMPTZ NOT NULL,
     not_after TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_server_keys_purpose CHECK (purpose IN ('PROTOCOL', 'JWT')),
     CONSTRAINT ck_server_keys_status CHECK (status IN ('ACTIVE', 'RETIRING', 'REVOKED')),
     CONSTRAINT ck_server_keys_validity CHECK (not_after > not_before)
 );
+
+CREATE INDEX idx_server_keys_purpose_status ON server_keys (purpose, status, created_at DESC);

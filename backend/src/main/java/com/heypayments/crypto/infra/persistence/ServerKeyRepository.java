@@ -1,5 +1,6 @@
 package com.heypayments.crypto.infra.persistence;
 
+import com.heypayments.crypto.domain.model.ServerKeyPurpose;
 import com.heypayments.crypto.domain.model.ServerKeyStatus;
 import java.util.Collection;
 import java.util.List;
@@ -12,5 +13,13 @@ public interface ServerKeyRepository extends JpaRepository<ServerKeyEntity, Stri
 
   Optional<ServerKeyEntity> findFirstByStatusOrderByCreatedAtDesc(ServerKeyStatus status);
 
+  Optional<ServerKeyEntity> findFirstByPurposeAndStatusOrderByCreatedAtDesc(
+      ServerKeyPurpose purpose, ServerKeyStatus status);
+
   List<ServerKeyEntity> findAllByStatusIn(Collection<ServerKeyStatus> statuses);
+
+  List<ServerKeyEntity> findAllByPurposeAndStatusIn(
+      ServerKeyPurpose purpose, Collection<ServerKeyStatus> statuses);
+
+  Optional<ServerKeyEntity> findByKidAndPurpose(String kid, ServerKeyPurpose purpose);
 }

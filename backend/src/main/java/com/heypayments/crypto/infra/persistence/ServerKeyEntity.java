@@ -1,5 +1,6 @@
 package com.heypayments.crypto.infra.persistence;
 
+import com.heypayments.crypto.domain.model.ServerKeyPurpose;
 import com.heypayments.crypto.domain.model.ServerKeyStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,6 +27,11 @@ public class ServerKeyEntity {
   @Id
   @Column(name = "kid", nullable = false, length = 50)
   private String kid;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "purpose", nullable = false, length = 20)
+  @Builder.Default
+  private ServerKeyPurpose purpose = ServerKeyPurpose.PROTOCOL;
 
   @Column(name = "public_key", nullable = false)
   private byte[] publicKey;

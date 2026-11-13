@@ -3,6 +3,7 @@ package com.heypayments.crypto.application;
 import com.heypayments.crypto.domain.CryptoService;
 import com.heypayments.crypto.domain.SignedEnvelope;
 import com.heypayments.crypto.domain.model.ServerKey;
+import com.heypayments.crypto.domain.model.ServerKeyPurpose;
 import com.heypayments.crypto.domain.model.ServerKeyStatus;
 import com.heypayments.crypto.infra.persistence.ServerKeyEntity;
 import com.heypayments.crypto.infra.persistence.ServerKeyRepository;
@@ -38,40 +39,52 @@ public class ServerKeyService {
 
   @Transactional
   public synchronized ServerKey getActiveSigningKey() {
+    return getActiveKey(ServerKeyPurpose.PROTOCOL);
+  }
+
+  @Transactional
+  public synchronized ServerKey getActiveKey(ServerKeyPurpose purpose) {
     Instant now = clock.instant();
     Optional<ServerKeyEntity> activeEntity =
-        serverKeyRepository.findFirstByStatusOrderByCreatedAtDesc(ServerKeyStatus.ACTIVE);
+        serverKeyRepository.findFirstByPurposeAndStatusOrderByCreatedAtDesc(
+            purpose, ServerKeyStatus.ACTIVE);
 
     if (activeEntity.isPresent() && !now.isAfter(activeEntity.get().getNotAfter())) {
       return toDomain(activeEntity.get());
     }
 
-    log.info("No active server signing key found or key expired; generating a new active key");
-    return generateAndSaveKey(ServerKeyStatus.ACTIVE);
+    log.info(
+        "No active key found for purpose={} or key expired; generating a new active key", purpose);
+    return generateAndSaveKey(purpose, ServerKeyStatus.ACTIVE);
   }
 
   @Transactional
   public synchronized ServerKey rotateKey() {
-    Instant now = clock.instant();
+    return rotateKey(ServerKeyPurpose.PROTOCOL);
+  }
+
+  @Transactional
+  public synchronized ServerKey rotateKey(ServerKeyPurpose purpose) {
     Optional<ServerKeyEntity> activeEntity =
-        serverKeyRepository.findFirstByStatusOrderByCreatedAtDesc(ServerKeyStatus.ACTIVE);
+        serverKeyRepository.findFirstByPurposeAndStatusOrderByCreatedAtDesc(
+            purpose, ServerKeyStatus.ACTIVE);
 
     activeEntity.ifPresent(
         entity -> {
           entity.setStatus(ServerKeyStatus.RETIRING);
           serverKeyRepository.save(entity);
-          log.info("Retired server signing key kid={}", entity.getKid());
+          log.info("Retired server key kid={} purpose={}", entity.getKid(), entity.getPurpose());
         });
 
-    return generateAndSaveKey(ServerKeyStatus.ACTIVE);
+    return generateAndSaveKey(purpose, ServerKeyStatus.ACTIVE);
   }
 
   @Transactional
   public Map<String, Object> getJwks() {
     getActiveSigningKey();
     List<ServerKeyEntity> keys =
-        serverKeyRepository.findAllByStatusIn(
-            List.of(ServerKeyStatus.ACTIVE, ServerKeyStatus.RETIRING));
+        serverKeyRepository.findAllByPurposeAndStatusIn(
+            ServerKeyPurpose.PROTOCOL, List.of(ServerKeyStatus.ACTIVE, ServerKeyStatus.RETIRING));
 
     List<Map<String, Object>> jwkList = new ArrayList<>();
     for (ServerKeyEntity entity : keys) {
@@ -119,7 +132,30 @@ public class ServerKeyService {
         .map(entity -> cryptoService.fromUncompressedSec1(entity.getPublicKey()));
   }
 
-  private ServerKey generateAndSaveKey(ServerKeyStatus status) {
+  @Transactional(readOnly = true)
+  public Optional<ECPublicKey> getPublicKeyByKidAndPurpose(String kid, ServerKeyPurpose purpose) {
+    return serverKeyRepository
+        .findByKidAndPurpose(kid, purpose)
+        .filter(
+            entity ->
+                entity.getStatus() == ServerKeyStatus.ACTIVE
+                    || entity.getStatus() == ServerKeyStatus.RETIRING)
+        .map(entity -> cryptoService.fromUncompressedSec1(entity.getPublicKey()));
+  }
+
+  @Transactional(readOnly = true)
+  public Optional<ECPrivateKey> getPrivateKeyByKidAndPurpose(String kid, ServerKeyPurpose purpose) {
+    return serverKeyRepository
+        .findByKidAndPurpose(kid, purpose)
+        .map(
+            entity -> {
+              byte[] privateKeyDer =
+                  cryptoService.decryptPrivateKey(entity.getPrivateKeyEnc(), masterKey);
+              return cryptoService.privateKeyFromEncoded(privateKeyDer);
+            });
+  }
+
+  private ServerKey generateAndSaveKey(ServerKeyPurpose purpose, ServerKeyStatus status) {
     Instant now = clock.instant();
     Instant expiresAt = now.plus(90, ChronoUnit.DAYS);
 
@@ -128,11 +164,13 @@ public class ServerKeyService {
     byte[] encryptedPriv =
         cryptoService.encryptPrivateKey(keyPair.getPrivate().getEncoded(), masterKey);
 
-    String kid = "srv-" + UUID.randomUUID().toString().substring(0, 8);
+    String prefix = purpose == ServerKeyPurpose.JWT ? "jwt-" : "srv-";
+    String kid = prefix + UUID.randomUUID().toString().substring(0, 8);
 
     ServerKeyEntity entity =
         ServerKeyEntity.builder()
             .kid(kid)
+            .purpose(purpose)
             .publicKey(sec1Pub)
             .privateKeyEnc(encryptedPriv)
             .status(status)
@@ -142,13 +180,19 @@ public class ServerKeyService {
             .build();
 
     ServerKeyEntity saved = serverKeyRepository.save(entity);
-    log.info("Saved new server signing key kid={} status={} expiresAt={}", kid, status, expiresAt);
+    log.info(
+        "Saved new server signing key kid={} purpose={} status={} expiresAt={}",
+        kid,
+        purpose,
+        status,
+        expiresAt);
     return toDomain(saved);
   }
 
   private ServerKey toDomain(ServerKeyEntity entity) {
     return new ServerKey(
         entity.getKid(),
+        entity.getPurpose(),
         entity.getPublicKey(),
         entity.getPrivateKeyEnc(),
         entity.getStatus(),

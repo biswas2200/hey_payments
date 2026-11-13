@@ -58,7 +58,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
       response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
       String requestId = org.slf4j.MDC.get(com.heypayments.shared.web.RequestIdFilter.MDC_KEY);
       if (requestId == null || requestId.isBlank()) {
-        requestId = response.getHeader(com.heypayments.shared.web.RequestIdFilter.REQUEST_ID_HEADER);
+        requestId =
+            response.getHeader(com.heypayments.shared.web.RequestIdFilter.REQUEST_ID_HEADER);
       }
       if (requestId == null || requestId.isBlank()) {
         requestId = com.heypayments.shared.infra.id.UuidV7Generator.generate().toString();

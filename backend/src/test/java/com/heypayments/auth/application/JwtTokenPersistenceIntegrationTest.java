@@ -32,7 +32,8 @@ class JwtTokenPersistenceIntegrationTest extends BaseIntegrationTest {
   @Autowired private Clock clock;
 
   @Test
-  @DisplayName("JWT signing key is persisted encrypted, survives context restart, and unique kid is generated")
+  @DisplayName(
+      "JWT signing key is persisted encrypted, survives context restart, and unique kid is generated")
   void shouldSurviveSimulatedRestartAndValidateToken() {
     User user =
         new User(
