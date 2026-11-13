@@ -13,15 +13,17 @@ Work **one phase at a time**. Each phase ends at a **gate**: Definition of Done 
 - [ ] Bug-hunt agent report saved to `docs/reviews/AGENT-REVIEW-phase-N.md`, and all HIGH/MEDIUM findings fixed with regression tests.
 - [ ] `docs/PROGRESS.md` updated with the template in AGENTS.md §9.
 
-## Parallel rounds (two builder agents)
-From Phase 2 on, two agents build two phases at once (rules: AGENTS.md §12). Each phase keeps its own gate, progress file (`docs/progress/phase-N.md`), bug-hunt report and architect review.
-| Round | Track A | Track B | Release after the round |
-|---|---|---|---|
-| 1 | Phase 2: ledger, wallet, funding | Phase 5a: offline protocol library | — |
-| 2 | Phase 3: offline balance | Phase 4: design system and app shell | `v0.3.0` (money in + look and feel) |
-| 3 | Phase 6: sync, settlement, fraud | Phase 5b: offline payment on devices | `v0.6.0` offline-pay MVP |
-| 4 | Phase 7: merchant and admin | — | `v0.8.0` |
-| 5 | Phase 8: hardening | — | `v1.0.0` |
+## Parallel tracks (backend agent + frontend agent)
+From Phase 3 on, every phase is split into a **BE part** (backend tasks) and an **FE part** (frontend tasks), built at the same time by the two tracks in AGENTS.md §12. Each part gets its own report (`docs/progress/phase-<N>-be.md` / `-fe.md`) and its own architect review. The phase closes when both parts are approved and its acceptance test passes end to end.
+| Order | Track BE (backend) | Track FE (frontend) |
+|---|---|---|
+| now | Phase 2 (finishing; its frontend part was already built on `phase/2-ledger`) | Phase 5a: protocol library |
+| next | Phase 3 BE: 3.1–3.3 | Phase 3 FE: 3.4 (load-offline flow, balance card, unload) |
+| then | Phase 6 BE: 6.1–6.5 | Phase 4: design system and app shell (all FE) |
+| then | Phase 7 BE: 7.1–7.3 | Phase 5b: offline payment on devices (all FE), then 6.6, then 7.4 |
+| last | Phase 8 BE items (8.1 backend, 8.2, 8.3) | Phase 8 FE items (8.4, 8.5) |
+
+Releases: `v0.3.0` after Phases 2+3, `v0.4.0` after Phase 4, `v0.6.0` offline-pay MVP after 5b+6, `v0.8.0` after 7, `v1.0.0` after 8.
 
 ---
 
@@ -66,7 +68,7 @@ From Phase 2 on, two agents build two phases at once (rules: AGENTS.md §12). Ea
 
 **Acceptance:** funding updates the balance; replaying the same Idempotency-Key does not double-credit; 100 concurrent fund requests keep the ledger balanced.
 
-**Owns (parallel track A):** `backend/**` (migrations V5–V6 only), `frontend/src/app/features/home/**`, `frontend/src/app/features/wallet/**`, `frontend/src/app/core/api/generated/**` (regenerate only), `e2e/wallet*.spec.ts`, `test-vectors/ledger/` (if any).
+**Owns (built before the BE/FE split):** `backend/**` (migrations V5–V6 only), `frontend/src/app/features/home/**`, `frontend/src/app/features/wallet/**`, `frontend/src/app/core/api/generated/**` (regenerate only), `e2e/wallet*.spec.ts`, `test-vectors/ledger/` (if any).
 
 ## Phase 3: Offline balance (load/unload, Balance Certificates)
 | # | Task |
@@ -91,7 +93,7 @@ From Phase 2 on, two agents build two phases at once (rules: AGENTS.md §12). Ea
 
 **Acceptance:** side-by-side with `reference/screens/*.png`, layout, hierarchy, colour, type and copy match. Logo and icons are the provided SVGs (not redrawn). axe reports 0 serious/critical issues. The app is installable. Later phases (5–7) must build P3–P6, M1–M4 and A1 to the same reference and add a visual test for each.
 
-## Phase 5a: Offline protocol library (pure TypeScript, parallel track B)
+## Phase 5a: Offline protocol library (pure TypeScript, Track FE)
 Tasks 5.1 and 5.2 of Phase 5, built and reviewed as their own phase, before the UI. No Angular, no backend, no Docker: inputs are the messages in doc 03 §3, with Balance and Merchant Certificates as **test fixtures** signed by a fixed test server key.
 | # | Task |
 |---|---|
@@ -102,7 +104,7 @@ Tasks 5.1 and 5.2 of Phase 5, built and reviewed as their own phase, before the 
 
 **Acceptance:** 100% of P1–P6 and M1–M8 covered by tests that fail when the rule is removed; ≥95% line coverage on `core/crypto` and `core/protocol`; vectors are deterministic (re-running the generator changes nothing).
 
-**Owns (parallel track B):** `frontend/src/app/core/protocol/**`, new files in `frontend/src/app/core/crypto/**` (existing `crypto.ts`/`jcs.ts` may only gain exports, never change behaviour), `test-vectors/protocol/**`. No migrations, no backend, no screens.
+**Owns (Track FE):** `frontend/src/app/core/protocol/**`, new files in `frontend/src/app/core/crypto/**` (existing `crypto.ts`/`jcs.ts` may only gain exports, never change behaviour), `test-vectors/protocol/**`. No migrations, no backend, no screens.
 
 ## Phase 5 (5b): Offline payment on devices
 Tasks 5.1–5.2 are done in Phase 5a. Phase 5b builds on that library.

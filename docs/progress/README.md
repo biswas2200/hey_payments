@@ -1,5 +1,8 @@
 # Per-phase progress reports
 
-From Phase 2 on, each builder agent writes its phase report here as `phase-<N>.md` (for example `phase-2.md`, `phase-5a.md`), using the template in `AGENTS.md` §9. Two agents work in parallel (AGENTS.md §12), so they never edit the same report file.
+Two builder agents work in parallel, split by layer (AGENTS.md §12). Each writes its own report here using the template in `AGENTS.md` §9:
+- `phase-<N>-be.md`: the backend part (Track BE)
+- `phase-<N>-fe.md`: the frontend part (Track FE)
+- Phase 2 (built before the split) uses `phase-2.md`; Phase 5a uses `phase-5a.md`.
 
-After the architect approves a phase, the architect adds a one-line link from `docs/PROGRESS.md`.
+After the architect approves a part, the architect adds a one-line link from `docs/PROGRESS.md`.

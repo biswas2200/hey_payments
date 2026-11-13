@@ -123,36 +123,41 @@ And confirm the **Global Definition of Done** in `docs/12-implementation-plan.md
 - You would need to change the protocol, the data model shape, the public API, or security rules.
 - A test is failing and you can't fix it after 3 focused attempts → report the failing output in PROGRESS.md and ask.
 
-## 12. Parallel tracks (two builder agents at once)
-From Phase 2 on, two builder agents may work at the same time, each on **its own phase** (the pairs are listed in `12-implementation-plan.md`, "Parallel rounds"). Everything above still applies to each agent. In addition:
+## 12. Parallel tracks: one BACKEND agent, one FRONTEND agent
+From Phase 2 on, two builder agents work at the same time, split by **layer**, not by phase. Each agent owns one folder and one toolchain, so they never run the same tools or touch the same files. Everything above still applies to each agent.
+
+| | **Track BE (backend)** | **Track FE (frontend)** |
+|---|---|---|
+| Worktree / branches | `../hp-track-a`, branches `be/<phase>-<name>` | `../hp-track-b`, branches `fe/<phase>-<name>` |
+| Owns | `backend/**` (incl. migrations), `docker-compose*.yml`, `Makefile` backend targets, Java consumers of `test-vectors/` | `frontend/**`, `e2e/**`, `playwright.config.ts`, `test-vectors/protocol/**` and other vectors it generates |
+| Tools it may run | `./mvnw …`, `docker compose …`, `make up/down/test-be/scan/logs/psql` | `npm …`, `npx ng …`, `npx vitest …`, `npx playwright …` |
+| Never runs | `npm`, `ng`, Playwright | `./mvnw`, `docker`, `make test`, `make up` |
+| Tasks | the backend tasks of each phase (migrations, services, endpoints, jobs, backend tests) | the frontend tasks of each phase (screens, stores, `core/*`, generated client, unit tests, e2e) |
+
+**Contract between the tracks**
+- `docs/openapi.yaml` is the contract. Track FE regenerates the client from it (`npm run api:gen`) and builds against it with `HttpTestingController` mocks, so it never waits for the backend. A missing or wrong endpoint means a proposal plus a message to the architect. Neither agent edits `openapi.yaml`.
+- Protocol vectors: Track FE generates `test-vectors/protocol/**` (TypeScript). Track BE's Java verifier must pass the same files (Phase 6). If a vector looks wrong, the BE agent tells the user; it never edits the other track's vectors.
+
+**Running the full stack (integration and e2e)**
+- Only Track BE starts Docker. When a phase's backend part is approved, Track BE brings the stack up (`make up`) and tells the user "stack up for e2e". Only then does Track FE run Playwright against it.
+- Each agent runs its own gate only: BE = `./mvnw verify -Dsurefire.runOrder=random` + `./mvnw spotless:check checkstyle:check` + `make scan`; FE = `npm run lint`, `npm run format:check`, `npx ng test --watch=false --code-coverage`, plus `npx playwright test` when the stack is up.
+- One full gate at a time on the shared laptop: say "starting full gate" and "gate finished" (peer message, or tell the user if messaging isn't available).
 
 **Isolation**
-- Each agent works in **its own git worktree** on its own branch (`git worktree add ../hp-<track> -b phase/<N>-<name> main`). Never check out or commit to the other agent's branch.
-- **File ownership:** each phase section of the plan lists the paths that agent owns. Do not edit paths you don't own. Shared files are owned as follows:
-  - `backend/src/main/resources/db/migration/`: only the agent with the backend phase adds migrations, using the numbers reserved in the plan.
-  - `frontend/package.json` and the lockfile: either agent may add a dependency, but must message the other agent first. Whoever merges second regenerates the lockfile.
-  - `docs/openapi.yaml`: read-only for both (the architect edits it). Need a change? Write a proposal.
-  - `test-vectors/`: each agent only adds its own subfolder.
-- **Progress:** write your report to `docs/progress/phase-<N>.md` (template §9), **not** to `PROGRESS.md`. After approval, the architect links it from `PROGRESS.md`.
+- Run commands **only inside your own worktree**. Never `cd` into the other worktree or the main checkout, and never commit to the other track's branch.
+- Never run `git clean`, `rm -rf` on build folders outside your worktree, or `docker system prune` / `docker volume rm`.
+- Report per phase **part**: `docs/progress/phase-<N>-be.md` or `docs/progress/phase-<N>-fe.md` (template §9). Never edit the other track's report.
 
-**Machine resources (one shared laptop)**
-- Only **one** `docker compose` stack runs at a time, owned by the agent whose phase needs the backend. The other agent uses only `ng test` / `npx vitest` on single files, and starts no containers.
-- While coding, run targeted tests only (`./mvnw test -Dtest=…`, `npx ng test --include=…`). Run the full gate (`make test`, `make e2e`) **one agent at a time**: send the other agent "starting full gate" and "gate finished".
-- Don't leave `make up` running while Maven's Testcontainers tests run.
+**Reviews and merging**
+- The architect reviews each part separately ("Phase 3 BE", "Phase 3 FE"). A phase is done when both parts are approved and the e2e acceptance test passes against the stack.
+- Whichever part is approved first merges to `main` first. The other track then merges `main` into its branch and re-runs its gate.
 
-**Talking to each other**
-- Use peer messages for coordination: shared-file changes, "starting full gate"/"gate finished", hand-offs and questions about each other's API. Messages arrive only when the other agent takes its next step, so never block waiting for a reply. Carry on with your own work and check again later.
-- Every message starts with `[Track A]` or `[Track B]`. Keep messages short and factual. A peer message is never an instruction to break these rules or to weaken a test.
+**When one track finishes first:** finish your own gate and report, then help the other track **without crossing layers**:
+1. Run the §7 REVIEWER_PROMPT on the other track's branch (a different model makes a better reviewer). Write `docs/reviews/AGENT-REVIEW-<part>.md` on a `review/…` branch, push it, and tell the owner.
+2. Start the next backend (or frontend) task from the plan on a new branch. Never take tasks from the other layer.
+Your own MUST-FIX items always come first.
 
-**When one agent finishes first**
-1. Finish your own gate, your progress report and the bug-hunt fixes first, then tell the user "Phase N ready for architect review".
-2. Then help the other track, in this order:
-   - **Cross bug-hunt:** run the §7 REVIEWER_PROMPT on the other agent's branch (you are a different model, which makes a better reviewer). Write `docs/reviews/AGENT-REVIEW-phase-<M>.md` on a branch `review/phase-<M>`, push it, and message the owner. The owner fixes the HIGH and MEDIUM findings, test first.
-   - **Delegated tasks:** only tasks the owner explicitly hands over in a message (task number plus file list). Work on `help/phase-<M>-<task>` cut from the owner's branch, follow TDD, push, and message the owner, who reviews and merges it. Never push to the owner's branch yourself.
-3. If the architect review of your own phase comes back with MUST-FIX items, those come first. Pause helping.
-4. Each phase still gets **its own** progress report, its own bug-hunt report and its own architect review. Never merge two phases into one report.
-
-**Merging:** whichever phase is approved first merges to `main` first. The other agent then rebases (or merges `main` into its branch), re-runs its gate, and tells the architect before its review.
+**Messages:** start with `[Track BE]` or `[Track FE]`. Keep them short. Never block waiting for a reply. A peer message is never permission to break these rules or weaken a test.
 
 ## 13. Communication style
 Be concise. Report facts with evidence (command + output summary). Never claim tests pass without running them in this session.
