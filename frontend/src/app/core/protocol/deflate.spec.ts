@@ -6,22 +6,28 @@ import { describe, expect, it } from 'vitest';
 import { deflateRaw, inflateRaw } from './deflate';
 
 describe('deflateRaw / inflateRaw', () => {
+  // Helper: compare Uint8Array content regardless of internal buffer type
+  function expectBytesEqual(a: Uint8Array, b: Uint8Array): void {
+    expect(a.length).toBe(b.length);
+    expect(Array.from(a)).toEqual(Array.from(b));
+  }
+
   it('round-trips a simple ASCII payload', () => {
     const input = new TextEncoder().encode('Hello, HP-OFFLINE!');
     const compressed = deflateRaw(input);
     const restored = inflateRaw(compressed);
-    expect(restored).toEqual(input);
+    expectBytesEqual(restored, input);
   });
 
   it('round-trips binary data with all byte values 0–255', () => {
     const input = new Uint8Array(256);
     for (let i = 0; i < 256; i++) input[i] = i;
-    expect(inflateRaw(deflateRaw(input))).toEqual(input);
+    expectBytesEqual(inflateRaw(deflateRaw(input)), input);
   });
 
   it('round-trips empty input', () => {
     const input = new Uint8Array(0);
-    expect(inflateRaw(deflateRaw(input))).toEqual(input);
+    expectBytesEqual(inflateRaw(deflateRaw(input)), input);
   });
 
   it('compressed output is smaller than input for compressible data', () => {
