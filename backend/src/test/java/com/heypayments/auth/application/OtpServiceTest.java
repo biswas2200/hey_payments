@@ -82,4 +82,15 @@ class OtpServiceTest {
     assertThat(otpService.verifyAndConsumeOtp(phone, otp)).isFalse();
     assertThat(otpService.getRecentOtpForPhone(phone)).isNull();
   }
+
+  @Test
+  @DisplayName("should handle null and empty inputs safely with constant-time comparison")
+  void shouldHandleNullAndEmptyInputsSafely() {
+    String phone = "+919876543212";
+    otpService.generateAndSendOtp(phone, null);
+
+    assertThat(otpService.verifyAndConsumeOtp(phone, null)).isFalse();
+    assertThat(otpService.verifyAndConsumeOtp(phone, "")).isFalse();
+    assertThat(otpService.verifyAndConsumeOtp(phone, "123")).isFalse();
+  }
 }
