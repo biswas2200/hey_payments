@@ -58,9 +58,7 @@ export class AuthStore {
       this.currentUser.set(profile);
 
       try {
-        const device = await firstValueFrom(
-          this.http.get<DeviceResponse | null>('/api/v1/devices/me'),
-        );
+        const device = await firstValueFrom(this.devicesApi.devicesMeGet());
         this.activeDevice.set(device ?? null);
         if (device && device.merchantCertificate && device.deviceId) {
           await db.certs.put({
@@ -105,9 +103,7 @@ export class AuthStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      await firstValueFrom(
-        this.http.post<{ status: string; message: string }>('/api/v1/auth/verify-otp', req),
-      );
+      await firstValueFrom(this.authApi.authVerifyOtpPost({ body: req }));
     } catch (err: unknown) {
       const detail = this.extractErrorMessage(err, 'OTP verification failed');
       this.error.set(detail);
@@ -121,7 +117,7 @@ export class AuthStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      await firstValueFrom(this.http.put<void>('/api/v1/auth/pin', { pin, password }));
+      await firstValueFrom(this.authApi.authPinPut({ body: { pin, password } }));
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const hash = await derivePinHash(pin, salt);
       const saltHex = Array.from(salt)
@@ -261,7 +257,7 @@ export class AuthStore {
 
   async logout(): Promise<void> {
     try {
-      await firstValueFrom(this.http.post<void>('/api/v1/auth/logout', {}));
+      await firstValueFrom(this.authApi.authLogoutPost());
     } catch {
       // Ignore network errors on logout
     } finally {
