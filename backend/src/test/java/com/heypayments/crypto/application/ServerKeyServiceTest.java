@@ -19,6 +19,7 @@ class ServerKeyServiceTest extends BaseIntegrationTest {
 
   @Autowired private ServerKeyService serverKeyService;
   @Autowired private ServerKeyRepository serverKeyRepository;
+  @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
   @BeforeEach
   @AfterEach
@@ -82,15 +83,20 @@ class ServerKeyServiceTest extends BaseIntegrationTest {
   @DisplayName("should automatically rotate keys past 90 days during scheduledKeyRotation")
   void shouldRotateKeysOnScheduleWhenPast90Days() {
     ServerKey current = serverKeyService.getActiveSigningKey();
-    var entity = serverKeyRepository.findById(current.kid()).orElseThrow();
 
     // Key is young (< 90 days) -> should not rotate
     serverKeyService.scheduledKeyRotation();
     assertThat(serverKeyService.getActiveSigningKey().kid()).isEqualTo(current.kid());
 
-    // Age the key past 90 days
-    entity.setCreatedAt(java.time.Instant.now().minus(91, java.time.temporal.ChronoUnit.DAYS));
-    serverKeyRepository.save(entity);
+    // Age the key past 90 days via direct SQL update
+    java.time.Instant pastTime =
+        java.time.Instant.now().minus(91, java.time.temporal.ChronoUnit.DAYS);
+    jdbcTemplate.update(
+        "UPDATE server_keys SET created_at = ?, not_before = ?, not_after = ? WHERE kid = ?",
+        java.sql.Timestamp.from(pastTime),
+        java.sql.Timestamp.from(pastTime),
+        java.sql.Timestamp.from(pastTime.plus(90, java.time.temporal.ChronoUnit.DAYS)),
+        current.kid());
 
     serverKeyService.scheduledKeyRotation();
     ServerKey newKey = serverKeyService.getActiveSigningKey();

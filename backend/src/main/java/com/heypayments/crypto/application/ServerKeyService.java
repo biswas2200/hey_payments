@@ -22,6 +22,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +78,25 @@ public class ServerKeyService {
         });
 
     return generateAndSaveKey(purpose, ServerKeyStatus.ACTIVE);
+  }
+
+  @Scheduled(cron = "${app.crypto.key-rotation-cron:0 0 0 * * ?}")
+  @Transactional
+  public synchronized void scheduledKeyRotation() {
+    Instant now = clock.instant();
+    for (ServerKeyPurpose purpose : ServerKeyPurpose.values()) {
+      Optional<ServerKeyEntity> activeEntity =
+          serverKeyRepository.findFirstByPurposeAndStatusOrderByCreatedAtDesc(
+              purpose, ServerKeyStatus.ACTIVE);
+      if (activeEntity.isPresent()) {
+        ServerKeyEntity key = activeEntity.get();
+        if (key.getCreatedAt().plus(90, ChronoUnit.DAYS).isBefore(now)
+            || !now.isBefore(key.getNotAfter())) {
+          log.info("Scheduled rotation triggered for purpose={} kid={}", purpose, key.getKid());
+          rotateKey(purpose);
+        }
+      }
+    }
   }
 
   @Transactional
