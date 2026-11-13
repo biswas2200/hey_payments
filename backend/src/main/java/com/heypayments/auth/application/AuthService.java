@@ -36,6 +36,7 @@ public class AuthService {
   private final RefreshTokenService refreshTokenService;
   private final OtpService otpService;
   private final PhoneRateLimiter phoneRateLimiter;
+  private final org.springframework.context.ApplicationEventPublisher eventPublisher;
   private final Clock clock;
 
   public record LoginResult(TokenResponse tokenResponse, String refreshToken) {}
@@ -81,6 +82,9 @@ public class AuthService {
 
       merchantService.createMerchant(userId, displayName, handle, "GENERAL", 1_000_000L);
     }
+
+    eventPublisher.publishEvent(
+        new com.heypayments.auth.domain.event.UserRegisteredEvent(userId, role, now));
 
     otpService.generateAndSendOtp(req.phone(), req.email());
     log.info(

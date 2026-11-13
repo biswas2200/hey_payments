@@ -40,6 +40,7 @@ class AuthServiceTest {
   private RefreshTokenService refreshTokenService;
   private OtpService otpService;
   private PhoneRateLimiter phoneRateLimiter;
+  private org.springframework.context.ApplicationEventPublisher eventPublisher;
   private Clock clock;
   private AuthService authService;
 
@@ -54,6 +55,7 @@ class AuthServiceTest {
     refreshTokenService = mock(RefreshTokenService.class);
     otpService = mock(OtpService.class);
     phoneRateLimiter = mock(PhoneRateLimiter.class);
+    eventPublisher = mock(org.springframework.context.ApplicationEventPublisher.class);
     clock = Clock.fixed(now, ZoneId.of("UTC"));
 
     authService =
@@ -65,6 +67,7 @@ class AuthServiceTest {
             refreshTokenService,
             otpService,
             phoneRateLimiter,
+            eventPublisher,
             clock);
   }
 

@@ -17,17 +17,29 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 class WalletServiceTest extends BaseIntegrationTest {
 
   @Autowired private WalletService walletService;
   @Autowired private LedgerService ledgerService;
   @Autowired private ApplicationEventPublisher eventPublisher;
+  @Autowired private JdbcTemplate jdbcTemplate;
+
+  private UUID createRawUser() {
+    UUID userId = UUID.randomUUID();
+    jdbcTemplate.update(
+        "INSERT INTO users (id, phone, email, password_hash, role, status, created_at, updated_at) VALUES (?, ?, ?, 'hash', 'PAYER', 'ACTIVE', NOW(), NOW())",
+        userId,
+        "+9198" + UUID.randomUUID().toString().replaceAll("[^0-9]", "").substring(0, 8),
+        "user-" + userId + "@example.com");
+    return userId;
+  }
 
   @Test
   @DisplayName("Payer registration event automatically provisions wallet and USER_MAIN ledger account")
   void shouldProvisionWalletOnPayerRegistrationEvent() {
-    UUID userId = UUID.randomUUID();
+    UUID userId = createRawUser();
     eventPublisher.publishEvent(new UserRegisteredEvent(userId, UserRole.PAYER, Instant.now()));
 
     Wallet wallet = walletService.getWalletByUserId(userId);
@@ -48,7 +60,7 @@ class WalletServiceTest extends BaseIntegrationTest {
   @Test
   @DisplayName("Fund wallet credits USER_MAIN account from SYS:BANK_SIM_CLEARING")
   void shouldFundWalletSuccessfully() {
-    UUID userId = UUID.randomUUID();
+    UUID userId = createRawUser();
     Wallet wallet = walletService.getOrCreateWallet(userId);
 
     String key = "fund-test-" + UUID.randomUUID();
@@ -61,7 +73,7 @@ class WalletServiceTest extends BaseIntegrationTest {
   @Test
   @DisplayName("Daily funding cap of ₹50,000 (5,000,000 paise) is strictly enforced")
   void shouldEnforceDailyFundingLimit() {
-    UUID userId = UUID.randomUUID();
+    UUID userId = createRawUser();
     walletService.getOrCreateWallet(userId);
 
     // 1. Fund 40,000 INR (4,000,000 paise) -> succeeds
@@ -87,7 +99,7 @@ class WalletServiceTest extends BaseIntegrationTest {
   @Test
   @DisplayName("Fund wallet is idempotent on Idempotency-Key")
   void shouldBeIdempotentOnFunding() {
-    UUID userId = UUID.randomUUID();
+    UUID userId = createRawUser();
     walletService.getOrCreateWallet(userId);
 
     String idempotencyKey = "idemp-" + UUID.randomUUID();
