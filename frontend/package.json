@@ -29,6 +29,7 @@
     "@lucide/angular": "^1.72.0",
     "canonicalize": "^5.1.0",
     "dexie": "^4.4.7",
+    "fflate": "0.8.3",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
