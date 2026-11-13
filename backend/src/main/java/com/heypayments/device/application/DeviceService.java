@@ -119,14 +119,16 @@ public class DeviceService {
   }
 
   @Transactional(readOnly = true)
-  public DeviceResponse getActiveDevice(UUID userId) {
+  public Optional<DeviceResponse> findActiveDevice(UUID userId) {
     List<DeviceEntity> devices = deviceRepository.findAllByUserId(userId);
-    DeviceEntity active =
-        devices.stream()
-            .filter(d -> d.getStatus() == DeviceStatus.ACTIVE)
-            .findFirst()
-            .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "No active device found"));
+    Optional<DeviceEntity> activeOpt =
+        devices.stream().filter(d -> d.getStatus() == DeviceStatus.ACTIVE).findFirst();
 
+    if (activeOpt.isEmpty()) {
+      return Optional.empty();
+    }
+
+    DeviceEntity active = activeOpt.get();
     SignedEnvelope merchantCert = null;
     if (active.getKind() == DeviceKind.MERCHANT) {
       Merchant merchant =
@@ -153,8 +155,15 @@ public class DeviceService {
       merchantCert = serverKeyService.signEnvelope(mcPayload);
     }
 
-    return new DeviceResponse(
-        active.getId(), active.getStatus().name(), active.getLastCounter(), merchantCert);
+    return Optional.of(
+        new DeviceResponse(
+            active.getId(), active.getStatus().name(), active.getLastCounter(), merchantCert));
+  }
+
+  @Transactional(readOnly = true)
+  public DeviceResponse getActiveDevice(UUID userId) {
+    return findActiveDevice(userId)
+        .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "No active device found"));
   }
 
   @Transactional

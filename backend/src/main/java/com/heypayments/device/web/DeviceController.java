@@ -56,7 +56,10 @@ public class DeviceController {
   @Operation(summary = "Get current active device for authenticated user")
   public ResponseEntity<DeviceResponse> getActiveDevice(Principal principal) {
     UUID userId = UUID.fromString(principal.getName());
-    return ResponseEntity.ok(deviceService.getActiveDevice(userId));
+    return deviceService
+        .findActiveDevice(userId)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.noContent().build());
   }
 
   @DeleteMapping("/{id}")
