@@ -58,7 +58,7 @@ public class AuthService {
             .email(req.email())
             .passwordHash(hashedPassword)
             .role(role)
-            .status(UserStatus.LOCKED) // Locked until phone is verified via OTP
+            .status(UserStatus.PENDING_VERIFICATION) // Pending phone verification via OTP
             .createdAt(now)
             .updatedAt(now)
             .build();
@@ -77,7 +77,8 @@ public class AuthService {
     }
 
     otpService.generateAndSendOtp(req.phone(), req.email());
-    log.info("Registered user id={} role={} status=LOCKED, OTP dispatched", userId, role);
+    log.info(
+        "Registered user id={} role={} status=PENDING_VERIFICATION, OTP dispatched", userId, role);
     return userId;
   }
 
@@ -94,10 +95,18 @@ public class AuthService {
             .findByPhone(phone)
             .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "User not found"));
 
-    user.setStatus(UserStatus.ACTIVE);
-    user.setUpdatedAt(clock.instant());
-    userRepository.save(user);
-    log.info("User id={} successfully verified and activated", user.getId());
+    if (user.getStatus() == UserStatus.LOCKED) {
+      throw new DomainException(ErrorCode.FORBIDDEN, "Account is locked due to security hold");
+    }
+    if (user.getStatus() == UserStatus.DISABLED) {
+      throw new DomainException(ErrorCode.FORBIDDEN, "Account is disabled");
+    }
+    if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+      user.setStatus(UserStatus.ACTIVE);
+      user.setUpdatedAt(clock.instant());
+      userRepository.save(user);
+      log.info("User id={} successfully verified and activated", user.getId());
+    }
   }
 
   @Transactional
@@ -111,6 +120,11 @@ public class AuthService {
 
     if (!passwordHasher.verifyPassword(req.password(), user.getPasswordHash())) {
       throw new DomainException(ErrorCode.UNAUTHENTICATED, "Invalid phone or password");
+    }
+
+    if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+      throw new DomainException(
+          ErrorCode.FORBIDDEN, "Account pending verification. Please verify OTP first.");
     }
 
     if (user.getStatus() != UserStatus.ACTIVE) {
