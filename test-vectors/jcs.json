@@ -1,36 +1,62 @@
-[ {
-  "expected" : "{\"a\":\"first\",\"m\":true,\"z\":100}",
-  "name" : "key_sorting",
-  "input" : {
-    "m" : true,
-    "z" : 100,
-    "a" : "first"
+[
+  {
+    "name": "key_sorting",
+    "input": {
+      "m": true,
+      "z": 100,
+      "a": "first"
+    },
+    "expected": "{\"a\":\"first\",\"m\":true,\"z\":100}"
+  },
+  {
+    "name": "nested_structure",
+    "input": {
+      "b": [3, 2, 1],
+      "a": {
+        "x": 1,
+        "y": 2
+      }
+    },
+    "expected": "{\"a\":{\"x\":1,\"y\":2},\"b\":[3,2,1]}"
+  },
+  {
+    "name": "escapes_and_controls",
+    "input": {
+      "msg": "Line 1\nLine 2\tTab \"Quotes\" \\ Backslash\b\f\r"
+    },
+    "expected": "{\"msg\":\"Line 1\\nLine 2\\tTab \\\"Quotes\\\" \\\\ Backslash\\b\\f\\r\"}"
+  },
+  {
+    "name": "money_voucher_payload",
+    "input": {
+      "voucherId": "01931234-5678-7000-8000-000000000002",
+      "counter": 1,
+      "cumSpent": 12000,
+      "v": 1,
+      "amount": 12000,
+      "t": "VC"
+    },
+    "expected": "{\"amount\":12000,\"counter\":1,\"cumSpent\":12000,\"t\":\"VC\",\"v\":1,\"voucherId\":\"01931234-5678-7000-8000-000000000002\"}"
+  },
+  {
+    "name": "rfc8785_appendix_b_numbers",
+    "input": {
+      "expBig": 1e21,
+      "expSmall": 1e-7,
+      "maxSafeInt": 9007199254740991,
+      "minusZero": -0,
+      "zero": 0
+    },
+    "expected": "{\"expBig\":1e+21,\"expSmall\":1e-7,\"maxSafeInt\":9007199254740991,\"minusZero\":0,\"zero\":0}"
+  },
+  {
+    "name": "unicode_and_emoji_keys",
+    "input": {
+      "€": "euro",
+      "©": "copyright",
+      "🚀": "rocket",
+      "a": 1
+    },
+    "expected": "{\"a\":1,\"©\":\"copyright\",\"€\":\"euro\",\"🚀\":\"rocket\"}"
   }
-}, {
-  "expected" : "{\"a\":{\"x\":1,\"y\":2},\"b\":[3,2,1]}",
-  "name" : "nested_structure",
-  "input" : {
-    "b" : [ 3, 2, 1 ],
-    "a" : {
-      "x" : 1,
-      "y" : 2
-    }
-  }
-}, {
-  "expected" : "{\"msg\":\"Line 1\\nLine 2\\tTab \\\"Quotes\\\" \\\\ Backslash\"}",
-  "name" : "escapes_and_controls",
-  "input" : {
-    "msg" : "Line 1\nLine 2\tTab \"Quotes\" \\ Backslash"
-  }
-}, {
-  "expected" : "{\"amount\":12000,\"counter\":1,\"cumSpent\":12000,\"t\":\"VC\",\"v\":1,\"voucherId\":\"01931234-5678-7000-8000-000000000002\"}",
-  "name" : "money_voucher_payload",
-  "input" : {
-    "voucherId" : "01931234-5678-7000-8000-000000000002",
-    "counter" : 1,
-    "cumSpent" : 12000,
-    "v" : 1,
-    "amount" : 12000,
-    "t" : "VC"
-  }
-} ]
+]

@@ -31,10 +31,20 @@ interface SignVerifyVector {
     x: string;
     y: string;
   };
+  wrongPublicKeyJwk: {
+    kty: string;
+    crv: string;
+    kid: string;
+    x: string;
+    y: string;
+  };
   payload: Record<string, unknown>;
   canonicalJson: string;
   signatureP1363Base64Url: string;
+  malformedSignatureLengthBase64Url: string;
   tamperedPayload: Record<string, unknown>;
+  nonIntegerPayload: Record<string, unknown>;
+  overflowNumberPayload: Record<string, unknown>;
 }
 
 describe('Frontend Crypto & Shared Test Vectors', () => {
@@ -140,6 +150,54 @@ describe('Frontend Crypto & Shared Test Vectors', () => {
 
       const valid = await verifyEnvelope(envelope, pubKey);
       expect(valid).toBe(false);
+    });
+
+    it('should reject valid signature with wrong public key', async () => {
+      const wrongPubKey = await importPublicKeyJwk(signVerifyVector.wrongPublicKeyJwk);
+      const envelope = {
+        p: signVerifyVector.payload,
+        s: signVerifyVector.signatureP1363Base64Url,
+      };
+
+      const valid = await verifyEnvelope(envelope, wrongPubKey);
+      expect(valid).toBe(false);
+    });
+
+    it('should reject signature with malformed length', async () => {
+      const pubKey = await importPublicKeyJwk(signVerifyVector.publicKeyJwk);
+      const envelope = {
+        p: signVerifyVector.payload,
+        s: signVerifyVector.malformedSignatureLengthBase64Url,
+      };
+
+      const valid = await verifyEnvelope(envelope, pubKey);
+      expect(valid).toBe(false);
+    });
+
+    it('should reject non-integer numbers in signed protocol payload', async () => {
+      const keyPair = await generateDeviceKeyPair();
+      await expect(
+        signEnvelope(signVerifyVector.nonIntegerPayload, keyPair.privateKey),
+      ).rejects.toThrow();
+
+      const envelope = {
+        p: signVerifyVector.nonIntegerPayload,
+        s: signVerifyVector.signatureP1363Base64Url,
+      };
+      expect(await verifyEnvelope(envelope, keyPair.publicKey)).toBe(false);
+    });
+
+    it('should reject integers > 2^53 - 1 in signed protocol payload', async () => {
+      const keyPair = await generateDeviceKeyPair();
+      await expect(
+        signEnvelope(signVerifyVector.overflowNumberPayload, keyPair.privateKey),
+      ).rejects.toThrow();
+
+      const envelope = {
+        p: signVerifyVector.overflowNumberPayload,
+        s: signVerifyVector.signatureP1363Base64Url,
+      };
+      expect(await verifyEnvelope(envelope, keyPair.publicKey)).toBe(false);
     });
 
     it('should export public key to JWK and uncompressed SEC1 matching specification', async () => {

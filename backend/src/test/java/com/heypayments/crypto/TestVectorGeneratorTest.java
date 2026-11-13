@@ -1,20 +1,19 @@
 package com.heypayments.crypto;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.heypayments.crypto.domain.CryptoService;
 import com.heypayments.crypto.domain.JcsCanonicalizer;
 import com.heypayments.crypto.domain.SignedEnvelope;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyPair;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -24,111 +23,96 @@ class TestVectorGeneratorTest {
 
   private final JcsCanonicalizer jcs = new JcsCanonicalizer();
   private final CryptoService cryptoService = new CryptoService(jcs);
-  private final ObjectMapper objectMapper =
-      new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
-  @DisplayName("should generate and verify test-vectors/jcs.json and test-vectors/sign-verify.json")
-  void generateAndVerifyVectors() throws Exception {
+  @DisplayName("should verify all test-vectors/jcs.json canonicalization vectors")
+  void verifyJcsVectors() throws Exception {
     Path testVectorsDir = Paths.get("../test-vectors").toAbsolutePath().normalize();
     if (!Files.exists(testVectorsDir)) {
       testVectorsDir = Paths.get("test-vectors").toAbsolutePath().normalize();
     }
-    assertThat(Files.exists(testVectorsDir)).isTrue();
+    Path jcsPath = testVectorsDir.resolve("jcs.json");
+    assertThat(Files.exists(jcsPath)).isTrue();
 
-    // 1. Generate jcs.json
     List<Map<String, Object>> jcsCases =
-        List.of(
-            Map.of(
-                "name", "key_sorting",
-                "input", Map.of("z", 100, "a", "first", "m", true),
-                "expected", "{\"a\":\"first\",\"m\":true,\"z\":100}"),
-            Map.of(
-                "name", "nested_structure",
-                "input", Map.of("b", List.of(3, 2, 1), "a", Map.of("y", 2, "x", 1)),
-                "expected", "{\"a\":{\"x\":1,\"y\":2},\"b\":[3,2,1]}"),
-            Map.of(
-                "name", "escapes_and_controls",
-                "input", Map.of("msg", "Line 1\nLine 2\tTab \"Quotes\" \\ Backslash"),
-                "expected", "{\"msg\":\"Line 1\\nLine 2\\tTab \\\"Quotes\\\" \\\\ Backslash\"}"),
-            Map.of(
-                "name",
-                "money_voucher_payload",
-                "input",
-                Map.of(
-                    "v", 1,
-                    "t", "VC",
-                    "voucherId", "01931234-5678-7000-8000-000000000002",
-                    "amount", 12000,
-                    "cumSpent", 12000,
-                    "counter", 1),
-                "expected",
-                "{\"amount\":12000,\"counter\":1,\"cumSpent\":12000,\"t\":\"VC\",\"v\":1,\"voucherId\":\"01931234-5678-7000-8000-000000000002\"}"));
+        objectMapper.readValue(jcsPath.toFile(), new TypeReference<List<Map<String, Object>>>() {});
 
     for (Map<String, Object> tc : jcsCases) {
       String expected = (String) tc.get("expected");
       String actual = jcs.canonicalize(tc.get("input"));
-      assertThat(actual).isEqualTo(expected);
+      assertThat(actual).as("Vector: %s", tc.get("name")).isEqualTo(expected);
     }
+  }
 
-    Path jcsPath = testVectorsDir.resolve("jcs.json");
-    if (!Files.exists(jcsPath) || Boolean.getBoolean("generate.vectors")) {
-      objectMapper.writeValue(jcsPath.toFile(), jcsCases);
+  @Test
+  @DisplayName("should verify all test-vectors/sign-verify.json valid and negative cases")
+  void verifySignVerifyVectors() throws Exception {
+    Path testVectorsDir = Paths.get("../test-vectors").toAbsolutePath().normalize();
+    if (!Files.exists(testVectorsDir)) {
+      testVectorsDir = Paths.get("test-vectors").toAbsolutePath().normalize();
     }
-    assertThat(Files.exists(jcsPath)).isTrue();
-
     Path signVerifyPath = testVectorsDir.resolve("sign-verify.json");
-    if (!Files.exists(signVerifyPath) || Boolean.getBoolean("generate.vectors")) {
-      // 2. Generate sign-verify.json with a deterministic EC keypair
-      KeyPair keyPair = cryptoService.generateP256KeyPair();
-      ECPublicKey pub = (ECPublicKey) keyPair.getPublic();
-      ECPrivateKey priv = (ECPrivateKey) keyPair.getPrivate();
-
-      byte[] sec1 = cryptoService.toUncompressedSec1(pub);
-      String sec1Base64Url = Base64.getUrlEncoder().withoutPadding().encodeToString(sec1);
-      Map<String, String> jwk = cryptoService.toJwk(pub, "srv-test-key-01");
-      String privPkcs8Base64 = Base64.getEncoder().encodeToString(priv.getEncoded());
-
-      Map<String, Object> payload = new LinkedHashMap<>();
-      payload.put("v", 1);
-      payload.put("t", "MC");
-      payload.put("merchantId", "01931234-5678-7000-8000-000000000001");
-      payload.put("deviceId", "01931234-5678-7000-8000-000000000009");
-      payload.put("displayName", "Ravi General Store");
-      payload.put("issuedAt", "2026-11-12T10:00:00Z");
-
-      SignedEnvelope envelope = cryptoService.signEnvelope(payload, priv);
-      assertThat(cryptoService.verifyEnvelope(envelope, pub)).isTrue();
-
-      Map<String, Object> signVerifyData = new LinkedHashMap<>();
-      signVerifyData.put(
-          "description", "Cross-language ECDSA P-256 / SHA-256 / IEEE P1363 test vector");
-      signVerifyData.put("privateKeyPkcs8Base64", privPkcs8Base64);
-      signVerifyData.put("publicKeySec1Base64Url", sec1Base64Url);
-      signVerifyData.put("publicKeyJwk", jwk);
-      signVerifyData.put("payload", payload);
-      signVerifyData.put("canonicalJson", jcs.canonicalize(payload));
-      signVerifyData.put("signatureP1363Base64Url", envelope.s());
-
-      // Tampered payload and tampered signature cases
-      Map<String, Object> tamperedPayload = new LinkedHashMap<>(payload);
-      tamperedPayload.put("displayName", "Malicious Store");
-      signVerifyData.put("tamperedPayload", tamperedPayload);
-
-      objectMapper.writeValue(signVerifyPath.toFile(), signVerifyData);
-    } else {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> existingVector =
-          objectMapper.readValue(signVerifyPath.toFile(), Map.class);
-      @SuppressWarnings("unchecked")
-      Map<String, String> existingJwk = (Map<String, String>) existingVector.get("publicKeyJwk");
-      ECPublicKey existingPub = cryptoService.fromJwk(existingJwk.get("x"), existingJwk.get("y"));
-      @SuppressWarnings("unchecked")
-      Map<String, Object> payload = (Map<String, Object>) existingVector.get("payload");
-      SignedEnvelope existingEnv =
-          new SignedEnvelope(payload, (String) existingVector.get("signatureP1363Base64Url"));
-      assertThat(cryptoService.verifyEnvelope(existingEnv, existingPub)).isTrue();
-    }
     assertThat(Files.exists(signVerifyPath)).isTrue();
+
+    Map<String, Object> vector =
+        objectMapper.readValue(signVerifyPath.toFile(), new TypeReference<Map<String, Object>>() {});
+
+    @SuppressWarnings("unchecked")
+    Map<String, String> jwk = (Map<String, String>) vector.get("publicKeyJwk");
+    ECPublicKey pubKey = cryptoService.fromJwk(jwk.get("x"), jwk.get("y"));
+
+    @SuppressWarnings("unchecked")
+    Map<String, String> wrongJwk = (Map<String, String>) vector.get("wrongPublicKeyJwk");
+    ECPublicKey wrongPubKey = cryptoService.fromJwk(wrongJwk.get("x"), wrongJwk.get("y"));
+
+    byte[] privPkcs8 = Base64.getDecoder().decode((String) vector.get("privateKeyPkcs8Base64"));
+    ECPrivateKey privKey = cryptoService.privateKeyFromEncoded(privPkcs8);
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> payload = (Map<String, Object>) vector.get("payload");
+    String signature = (String) vector.get("signatureP1363Base64Url");
+    String canonicalJson = (String) vector.get("canonicalJson");
+
+    // 1. Valid signature verification
+    SignedEnvelope validEnvelope = new SignedEnvelope(payload, signature);
+    assertThat(jcs.canonicalize(payload)).isEqualTo(canonicalJson);
+    assertThat(cryptoService.verifyEnvelope(validEnvelope, pubKey)).isTrue();
+
+    // 2. Tampered payload rejected
+    @SuppressWarnings("unchecked")
+    Map<String, Object> tamperedPayload = (Map<String, Object>) vector.get("tamperedPayload");
+    SignedEnvelope tamperedEnvelope = new SignedEnvelope(tamperedPayload, signature);
+    assertThat(cryptoService.verifyEnvelope(tamperedEnvelope, pubKey)).isFalse();
+
+    // 3. Wrong public key rejected
+    assertThat(cryptoService.verifyEnvelope(validEnvelope, wrongPubKey)).isFalse();
+
+    // 4. Malformed signature length rejected (48 bytes instead of 64 bytes)
+    String malformedSig = (String) vector.get("malformedSignatureLengthBase64Url");
+    SignedEnvelope malformedSigEnvelope = new SignedEnvelope(payload, malformedSig);
+    assertThat(cryptoService.verifyEnvelope(malformedSigEnvelope, pubKey)).isFalse();
+
+    // 5. Non-integer number in protocol payload rejected
+    @SuppressWarnings("unchecked")
+    Map<String, Object> nonIntegerPayload = (Map<String, Object>) vector.get("nonIntegerPayload");
+    assertThatThrownBy(() -> cryptoService.signEnvelope(nonIntegerPayload, privKey))
+        .as("signEnvelope should reject non-integer numbers")
+        .isInstanceOf(Exception.class);
+    SignedEnvelope nonIntegerEnvelope = new SignedEnvelope(nonIntegerPayload, signature);
+    assertThat(cryptoService.verifyEnvelope(nonIntegerEnvelope, pubKey))
+        .as("verifyEnvelope should reject non-integer numbers")
+        .isFalse();
+
+    // 6. Number > 2^53 - 1 in protocol payload rejected
+    @SuppressWarnings("unchecked")
+    Map<String, Object> overflowPayload = (Map<String, Object>) vector.get("overflowNumberPayload");
+    assertThatThrownBy(() -> cryptoService.signEnvelope(overflowPayload, privKey))
+        .as("signEnvelope should reject integers > 2^53 - 1")
+        .isInstanceOf(Exception.class);
+    SignedEnvelope overflowEnvelope = new SignedEnvelope(overflowPayload, signature);
+    assertThat(cryptoService.verifyEnvelope(overflowEnvelope, pubKey))
+        .as("verifyEnvelope should reject integers > 2^53 - 1")
+        .isFalse();
   }
 }
