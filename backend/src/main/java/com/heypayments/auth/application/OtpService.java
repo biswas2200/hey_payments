@@ -2,6 +2,8 @@ package com.heypayments.auth.application;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
@@ -35,7 +37,7 @@ public class OtpService {
     Instant expiresAt = clock.instant().plusSeconds(OTP_VALIDITY_SECONDS);
 
     otpStore.put(phone, new OtpEntry(otp, expiresAt, 0));
-    log.info("Generated OTP for phone {} (expires in 5m)", phone);
+    log.info("Generated OTP (expires in 5m)");
 
     // Send email via Mailpit (SMTP port 1025) if mailSender is available
     if (email != null && !email.isBlank()) {
@@ -49,7 +51,7 @@ public class OtpService {
               message.setText(
                   "Your Hey Payments verification code is: " + otp + "\nValid for 5 minutes.");
               mailSender.send(message);
-              log.info("Sent verification email with OTP to {}", email);
+              log.info("Sent verification email with OTP to user email");
             } catch (Exception e) {
               log.warn("Could not dispatch email to Mailpit: {}", e.getMessage());
             }
@@ -68,17 +70,17 @@ public class OtpService {
       otpStore.invalidate(phone);
       return false;
     }
-    if (entry.otp().equals(inputOtp)) {
+
+    byte[] expectedBytes = entry.otp().getBytes(StandardCharsets.UTF_8);
+    byte[] inputBytes = inputOtp != null ? inputOtp.getBytes(StandardCharsets.UTF_8) : new byte[0];
+    if (MessageDigest.isEqual(expectedBytes, inputBytes)) {
       otpStore.invalidate(phone);
       return true;
     }
 
     int nextFailedAttempts = entry.failedAttempts() + 1;
     if (nextFailedAttempts >= MAX_FAILED_ATTEMPTS) {
-      log.warn(
-          "OTP for phone {} invalidated after reaching max failed attempts ({})",
-          phone,
-          MAX_FAILED_ATTEMPTS);
+      log.warn("OTP invalidated after reaching max failed attempts ({})", MAX_FAILED_ATTEMPTS);
       otpStore.invalidate(phone);
     } else {
       otpStore.put(phone, new OtpEntry(entry.otp(), entry.expiresAt(), nextFailedAttempts));
