@@ -8,11 +8,14 @@ import com.heypayments.auth.web.dto.RegisterRequest;
 import com.heypayments.auth.web.dto.SetPinRequest;
 import com.heypayments.auth.web.dto.TokenResponse;
 import com.heypayments.auth.web.dto.VerifyOtpRequest;
+import com.heypayments.shared.domain.exception.DomainException;
+import com.heypayments.shared.domain.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.net.URI;
 import java.security.Principal;
 import java.time.Duration;
 import java.util.UUID;
@@ -75,6 +78,7 @@ public class AuthController {
       @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken,
       HttpServletRequest httpRequest,
       HttpServletResponse response) {
+    validateOriginOrReferer(httpRequest);
     LoginResult result = authService.refresh(refreshToken);
     setRefreshCookie(httpRequest, response, result.refreshToken(), REFRESH_COOKIE_MAX_AGE);
     return ResponseEntity.ok(result.tokenResponse());
@@ -102,6 +106,33 @@ public class AuthController {
     return ResponseEntity.noContent().build();
   }
 
+  private void validateOriginOrReferer(HttpServletRequest request) {
+    String origin = request.getHeader("Origin");
+    String referer = request.getHeader("Referer");
+    String candidate = (origin != null && !origin.isBlank()) ? origin : referer;
+
+    if (candidate != null && !candidate.isBlank()) {
+      try {
+        URI uri = URI.create(candidate);
+        String host = uri.getHost();
+        if (host == null) {
+          throw new DomainException(ErrorCode.FORBIDDEN, "Invalid origin header");
+        }
+        String serverName = request.getServerName();
+        boolean allowed =
+            host.equalsIgnoreCase(serverName)
+                || host.equalsIgnoreCase("localhost")
+                || host.equalsIgnoreCase("127.0.0.1")
+                || host.equalsIgnoreCase("nginx");
+        if (!allowed) {
+          throw new DomainException(ErrorCode.FORBIDDEN, "Cross-origin refresh forbidden");
+        }
+      } catch (IllegalArgumentException e) {
+        throw new DomainException(ErrorCode.FORBIDDEN, "Malformed origin header");
+      }
+    }
+  }
+
   private void setRefreshCookie(
       HttpServletRequest request, HttpServletResponse response, String token, Duration maxAge) {
     boolean secure =
@@ -110,7 +141,7 @@ public class AuthController {
         ResponseCookie.from(REFRESH_COOKIE_NAME, token)
             .httpOnly(true)
             .secure(secure)
-            .path("/")
+            .path("/api/v1/auth")
             .sameSite("Strict")
             .maxAge(maxAge)
             .build();
