@@ -1,0 +1,85 @@
+<div class="home-container">
+  <!-- Top Bar -->
+  <header class="home-header">
+    <div class="user-info">
+      <span class="lbl">{{ greeting() }}</span>
+      <h1 class="user-name">{{ userName() }}</h1>
+    </div>
+    <div class="header-actions">
+      <div class="avatar" aria-label="User avatar">
+        <span>{{ userInitial() }}</span>
+      </div>
+      <button
+        type="button"
+        class="icon-btn logout-btn"
+        id="logout-btn"
+        (click)="onLogout()"
+        aria-label="Log Out"
+        title="Log Out"
+      >
+        <svg lucideLogOut [size]="18" aria-hidden="true"></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Connectivity Banner -->
+  <div class="banner" [class.b-ok]="isOnline()" [class.b-off]="!isOnline()" role="status">
+    <svg *ngIf="!isOnline()" lucideWifiOff [size]="14" aria-hidden="true"></svg>
+    <span>{{ isOnline() ? 'Online · Balances synced' : 'Offline · Ready for offline pay' }}</span>
+  </div>
+
+  <!-- Offline Balance Hero Card (Calm Ledger balcard) -->
+  <section class="balcard" aria-labelledby="offline-bal-lbl">
+    <small id="offline-bal-lbl" class="lbl-card">Offline balance</small>
+    <div class="hero-amt" id="offline-balance">{{ walletStore.offlineEscrowFormatted() }}</div>
+    <div class="balcard-meta">of ₹2,000 capacity · instant offline payments</div>
+    <div class="progress-track" aria-hidden="true">
+      <div class="progress-bar" [style.width.%]="escrowPercentage()"></div>
+    </div>
+  </section>
+
+  <!-- Main Wallet Card (Calm Ledger mini) -->
+  <section class="mini-card" aria-labelledby="main-wallet-lbl">
+    <div class="mini-left">
+      <span id="main-wallet-lbl" class="lbl">Main wallet</span>
+      <div class="main-amt" id="main-balance">{{ walletStore.mainBalanceFormatted() }}</div>
+    </div>
+    <button
+      type="button"
+      class="add-btn"
+      id="add-money-btn"
+      (click)="onAddMoney()"
+      aria-label="Add money to main wallet"
+    >
+      <span>Add +</span>
+    </button>
+  </section>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <button
+      type="button"
+      class="btn btn-pay"
+      id="pay-offline-btn"
+      disabled
+      aria-disabled="true"
+      title="Offline Pay will be available in Phase 4"
+    >
+      <span>Pay without internet</span>
+    </button>
+  </div>
+
+  <!-- Recent Activity -->
+  <section class="recent-section" aria-labelledby="recent-lbl">
+    <div id="recent-lbl" class="lbl section-lbl">Recent activity</div>
+    <div class="activity-card">
+      <div class="activity-info">
+        <span class="activity-title">Simulator Bank Clearing</span>
+        <span class="activity-time">Automated Ledger Feed</span>
+      </div>
+      <div class="activity-amt">
+        <span class="status-badge">● Ready</span>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HomeComponent } from './home.component';
 import { WalletStore } from '../wallet/wallet.store';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -10,7 +11,7 @@ describe('HomeComponent', () => {
   let fixture: ComponentFixture<HomeComponent>;
   let walletStoreMock: any;
   let authStoreMock: any;
-  let router: Router;
+  let routerMock: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     walletStoreMock = {
@@ -20,25 +21,26 @@ describe('HomeComponent', () => {
       mainBalanceFormatted: signal('₹4,250.00'),
       offlineEscrowFormatted: signal('₹1,640.00'),
       loading: signal(false),
-      loadWallet: jasmine.createSpy('loadWallet').and.returnValue(Promise.resolve()),
+      loadWallet: vi.fn().mockResolvedValue(undefined),
     };
 
     authStoreMock = {
       currentUser: signal({ phone: '+919876543210', displayName: 'Priya', role: 'PAYER' }),
-      logout: jasmine.createSpy('logout').and.returnValue(Promise.resolve()),
+      logout: vi.fn().mockResolvedValue(undefined),
+    };
+
+    routerMock = {
+      navigate: vi.fn().mockResolvedValue(true),
     };
 
     await TestBed.configureTestingModule({
       imports: [HomeComponent],
       providers: [
-        provideRouter([]),
+        { provide: Router, useValue: routerMock },
         { provide: WalletStore, useValue: walletStoreMock },
         { provide: AuthStore, useValue: authStoreMock },
       ],
     }).compileComponents();
-
-    router = TestBed.inject(Router);
-    spyOn(router, 'navigate');
 
     fixture = TestBed.createComponent(HomeComponent);
     component = fixture.componentInstance;
@@ -57,7 +59,7 @@ describe('HomeComponent', () => {
     const addBtn = el.querySelector('#add-money-btn') as HTMLButtonElement;
     expect(addBtn).toBeTruthy();
     addBtn.click();
-    expect(router.navigate).toHaveBeenCalledWith(['/wallet/fund']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/wallet/fund']);
   });
 
   it('should logout and redirect to login when clicking logout button', async () => {
@@ -67,6 +69,6 @@ describe('HomeComponent', () => {
     logoutBtn.click();
     await fixture.whenStable();
     expect(authStoreMock.logout).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/auth/login']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/auth/login']);
   });
 });

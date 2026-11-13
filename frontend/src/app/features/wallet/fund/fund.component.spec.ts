@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FundComponent } from './fund.component';
 import { WalletStore } from '../wallet.store';
 import { signal } from '@angular/core';
@@ -8,7 +9,7 @@ describe('FundComponent', () => {
   let component: FundComponent;
   let fixture: ComponentFixture<FundComponent>;
   let walletStoreMock: any;
-  let router: Router;
+  let routerMock: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     walletStoreMock = {
@@ -17,17 +18,21 @@ describe('FundComponent', () => {
       mainBalanceFormatted: signal('₹500.00'),
       loading: signal(false),
       error: signal<string | null>(null),
-      fundWallet: jasmine.createSpy('fundWallet').and.returnValue(Promise.resolve()),
-      loadWallet: jasmine.createSpy('loadWallet').and.returnValue(Promise.resolve()),
+      fundWallet: vi.fn().mockResolvedValue({ mainBalance: 150000, offlineEscrow: 0 }),
+      loadWallet: vi.fn().mockResolvedValue(undefined),
+    };
+
+    routerMock = {
+      navigate: vi.fn().mockResolvedValue(true),
     };
 
     await TestBed.configureTestingModule({
       imports: [FundComponent],
-      providers: [provideRouter([]), { provide: WalletStore, useValue: walletStoreMock }],
+      providers: [
+        { provide: Router, useValue: routerMock },
+        { provide: WalletStore, useValue: walletStoreMock },
+      ],
     }).compileComponents();
-
-    router = TestBed.inject(Router);
-    spyOn(router, 'navigate');
 
     fixture = TestBed.createComponent(FundComponent);
     component = fixture.componentInstance;
@@ -53,11 +58,11 @@ describe('FundComponent', () => {
     submitBtn.click();
     await fixture.whenStable();
 
-    expect(walletStoreMock.fundWallet).toHaveBeenCalledWith(100000, jasmine.any(String));
+    expect(walletStoreMock.fundWallet).toHaveBeenCalledWith(100000, expect.any(String));
   });
 
   it('should display error message when funding fails', async () => {
-    walletStoreMock.fundWallet.and.returnValue(Promise.reject(new Error('Daily limit exceeded')));
+    walletStoreMock.fundWallet.mockRejectedValue(new Error('Daily limit exceeded'));
     walletStoreMock.error.set('Daily limit exceeded');
     component.amount.set(60000);
     fixture.detectChanges();

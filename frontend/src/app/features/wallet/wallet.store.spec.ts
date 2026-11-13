@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { WalletStore } from './wallet.store';
 import { WalletService } from '../../core/api/generated/services/wallet.service';
@@ -6,7 +7,10 @@ import type { WalletResponse } from '../../core/api/models';
 
 describe('WalletStore', () => {
   let store: WalletStore;
-  let walletApiMock: jasmine.SpyObj<WalletService>;
+  let walletApiMock: {
+    walletsMeGet: ReturnType<typeof vi.fn>;
+    walletsMeFundPost: ReturnType<typeof vi.fn>;
+  };
 
   const mockWallet: WalletResponse = {
     mainBalance: 50000,
@@ -15,7 +19,10 @@ describe('WalletStore', () => {
   };
 
   beforeEach(() => {
-    walletApiMock = jasmine.createSpyObj('WalletService', ['walletsMeGet', 'walletsMeFundPost']);
+    walletApiMock = {
+      walletsMeGet: vi.fn(),
+      walletsMeFundPost: vi.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [WalletStore, { provide: WalletService, useValue: walletApiMock }],
@@ -25,7 +32,7 @@ describe('WalletStore', () => {
   });
 
   it('should load wallet balances and format currency properly', async () => {
-    walletApiMock.walletsMeGet.and.returnValue(of(mockWallet));
+    walletApiMock.walletsMeGet.mockReturnValue(of(mockWallet));
 
     await store.loadWallet();
 
@@ -41,7 +48,7 @@ describe('WalletStore', () => {
       offlineEscrow: 0,
       activeBc: undefined,
     };
-    walletApiMock.walletsMeFundPost.and.returnValue(of(updatedWallet));
+    walletApiMock.walletsMeFundPost.mockReturnValue(of(updatedWallet));
 
     await store.fundWallet(100000, 'SIM_BANK');
 
@@ -52,13 +59,13 @@ describe('WalletStore', () => {
 
   it('should rollback balance on funding failure', async () => {
     store.wallet.set({ mainBalance: 50000, offlineEscrow: 0, activeBc: undefined });
-    walletApiMock.walletsMeFundPost.and.returnValue(
+    walletApiMock.walletsMeFundPost.mockReturnValue(
       throwError(() => ({
         error: { title: 'Limit Exceeded', detail: 'Daily limit exceeded' },
       })),
     );
 
-    await expectAsync(store.fundWallet(6000000, 'SIM_BANK')).toBeRejected();
+    await expect(store.fundWallet(6000000, 'SIM_BANK')).rejects.toBeTruthy();
     expect(store.mainBalance()).toBe(50000);
     expect(store.error()).toContain('Daily limit exceeded');
   });

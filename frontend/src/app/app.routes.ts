@@ -52,7 +52,13 @@ export const routes: Routes = [
     path: 'pay',
     canActivate: [canActivateAuth],
     loadComponent: () =>
-      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      import('./features/home/home.component').then((m) => m.HomeComponent),
+  },
+  {
+    path: 'wallet/fund',
+    canActivate: [canActivateAuth],
+    loadComponent: () =>
+      import('./features/wallet/fund/fund.component').then((m) => m.FundComponent),
   },
   {
     path: 'merchant',

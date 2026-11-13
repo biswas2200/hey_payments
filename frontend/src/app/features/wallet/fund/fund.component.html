@@ -1,0 +1,125 @@
+<div class="fund-container">
+  <header class="fund-header">
+    <button
+      type="button"
+      class="back-btn"
+      id="back-to-home-btn"
+      (click)="onBack()"
+      aria-label="Back to home"
+    >
+      <svg lucideArrowLeft [size]="20" aria-hidden="true"></svg>
+    </button>
+    <h1 class="screen-title">Add Money</h1>
+    <div class="header-spacer"></div>
+  </header>
+
+  <div *ngIf="successResponse(); else fundForm" class="success-card" role="alert">
+    <div class="success-icon" aria-hidden="true">
+      <svg lucideCheck [size]="32"></svg>
+    </div>
+    <h2 class="success-title">Money Added Successfully!</h2>
+    <p class="success-subtitle">Your wallet balance has been updated</p>
+
+    <div class="balance-summary">
+      <span class="lbl">New Main Balance</span>
+      <div class="balance-val">{{ walletStore.mainBalanceFormatted() }}</div>
+    </div>
+
+    <button type="button" class="btn btn-primary" id="success-done-btn" (click)="onBack()">
+      Back to Wallet
+    </button>
+  </div>
+
+  <ng-template #fundForm>
+    <div *ngIf="walletStore.error()" class="error-alert" role="alert">
+      {{ walletStore.error() }}
+    </div>
+
+    <!-- Current balance info -->
+    <div class="curr-balance">
+      <span class="lbl">Current main balance</span>
+      <span class="curr-amt">{{ walletStore.mainBalanceFormatted() }}</span>
+    </div>
+
+    <!-- Quick amount chips -->
+    <div class="chips-label lbl">Select Amount</div>
+    <div class="chips-row">
+      <button
+        type="button"
+        class="chip"
+        id="chip-100"
+        (click)="selectAmount(100)"
+        [class.selected]="amount() === 100"
+      >
+        +₹100
+      </button>
+      <button
+        type="button"
+        class="chip"
+        id="chip-500"
+        (click)="selectAmount(500)"
+        [class.selected]="amount() === 500"
+      >
+        +₹500
+      </button>
+      <button
+        type="button"
+        class="chip"
+        id="chip-1000"
+        (click)="selectAmount(1000)"
+        [class.selected]="amount() === 1000"
+      >
+        +₹1,000
+      </button>
+      <button
+        type="button"
+        class="chip"
+        id="chip-2000"
+        (click)="selectAmount(2000)"
+        [class.selected]="amount() === 2000"
+      >
+        +₹2,000
+      </button>
+    </div>
+
+    <!-- Amount input field -->
+    <div class="input-card">
+      <label for="fund-amount-input" class="lbl">Or enter amount (max ₹50,000/day)</label>
+      <div class="input-wrap">
+        <span class="currency-prefix">₹</span>
+        <input
+          id="fund-amount-input"
+          type="number"
+          min="1"
+          max="50000"
+          [value]="amount() || ''"
+          (input)="onAmountInput($event)"
+          placeholder="0"
+          class="amount-input"
+          required
+        />
+      </div>
+    </div>
+
+    <!-- Payment Source Selector -->
+    <div class="source-card">
+      <label for="source-select" class="lbl">Simulated Payment Method</label>
+      <select id="source-select" class="source-select" [value]="source()" (change)="onSourceChange($event)">
+        <option value="SIM_BANK">UPI Simulator (Instant)</option>
+        <option value="SIM_NETBANKING">NetBanking Simulator</option>
+      </select>
+    </div>
+
+    <!-- Action buttons -->
+    <button
+      type="button"
+      class="btn btn-primary"
+      id="fund-submit-btn"
+      [disabled]="isSubmitting() || !isValidAmount()"
+      (click)="onSubmit()"
+    >
+      <span *ngIf="!isSubmitting()">Add ₹{{ amount() || 0 }} to Wallet</span>
+      <span *ngIf="isSubmitting()">Processing...</span>
+    </button>
+  </ng-template>
+</div>
