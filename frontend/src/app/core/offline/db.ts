@@ -38,6 +38,8 @@ export class HeyPaymentsDb extends Dexie {
     this.version(1).stores({
       keys: 'deviceId, createdAt',
       certs: 'id, type, status, lastCounter',
+    });
+    this.version(2).stores({
       meta: 'key',
     });
   }
