@@ -128,6 +128,9 @@ test.describe('Hey Payments Payer Wallet & Funding E2E', () => {
     await expect(page.locator('.error-alert')).toBeVisible();
     await expect(page.locator('.error-alert')).toContainText('Daily funding limit of ₹50,000 exceeded');
 
-    expect(consoleErrors).toEqual([]);
+    const unexpectedErrors = consoleErrors.filter(
+      (msg) => !msg.includes('status of 422'),
+    );
+    expect(unexpectedErrors).toEqual([]);
   });
 });
