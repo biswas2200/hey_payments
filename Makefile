@@ -41,7 +41,7 @@ e2e:
 
 lint:
 	cd backend && ./mvnw spotless:check checkstyle:check
-	cd frontend && npm run lint && npm run format:check
+	cd frontend && npm run api:gen && git diff --exit-code src/app/core/api/generated && npm run lint && npm run format:check
 
 fmt:
 	cd backend && ./mvnw spotless:apply

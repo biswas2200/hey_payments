@@ -1,11 +1,14 @@
 /**
  * Reactive AuthStore (Angular 22 Signals)
  * Centralizes user profile, access token, active device, and role states.
+ * Uses generated OpenAPI client per docs/openapi.yaml.
  */
 
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { AuthApiService } from '../api/auth-api.service';
+import { AuthService } from '../api/generated/services/auth.service';
+import { DevicesService } from '../api/generated/services/devices.service';
 import { KeyService } from '../crypto/key.service';
 import { derivePinHash } from '../crypto/crypto';
 import { db } from '../offline/db';
@@ -15,6 +18,7 @@ import type {
   DeviceResponse,
   LoginRequest,
   ProblemDetail,
+  ProtocolEnvelope,
   RegisterRequest,
   TokenResponse,
   UserProfile,
@@ -27,7 +31,9 @@ import type {
 export class AuthStore {
   private readonly tokenStore = inject(TokenStore);
   private readonly refreshService = inject(TokenRefreshService);
-  private readonly api = inject(AuthApiService);
+  private readonly authApi = inject(AuthService);
+  private readonly devicesApi = inject(DevicesService);
+  private readonly http = inject(HttpClient);
   private readonly keys = inject(KeyService);
 
   readonly currentUser = signal<UserProfile | null>(null);
@@ -45,20 +51,20 @@ export class AuthStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const tokenResp = await firstValueFrom(this.api.login(req));
-      this.tokenStore.setToken(tokenResp.accessToken, tokenResp.expiresIn);
+      const tokenResp = await firstValueFrom(this.authApi.authLoginPost({ body: req }));
+      this.tokenStore.setToken(tokenResp.accessToken ?? null, tokenResp.expiresIn);
 
-      const profile = await firstValueFrom(this.api.getMe());
+      const profile = await firstValueFrom(this.http.get<UserProfile>('/api/v1/users/me'));
       this.currentUser.set(profile);
 
       try {
-        const device = await firstValueFrom(this.api.getMyDevice());
+        const device = await firstValueFrom(this.http.get<DeviceResponse>('/api/v1/devices/me'));
         this.activeDevice.set(device);
-        if (device.merchantCertificate) {
+        if (device.merchantCertificate && device.deviceId) {
           await db.certs.put({
             id: device.deviceId,
             type: 'MC',
-            envelope: device.merchantCertificate,
+            envelope: device.merchantCertificate as unknown as ProtocolEnvelope,
             status: 'ACTIVE',
             spent: 0,
             lastCounter: 0,
@@ -82,7 +88,8 @@ export class AuthStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      return await firstValueFrom(this.api.register(req));
+      const resp = await firstValueFrom(this.authApi.authRegisterPost({ body: req }));
+      return { id: resp.id ?? '' };
     } catch (err: unknown) {
       const detail = this.extractErrorMessage(err, 'Registration failed');
       this.error.set(detail);
@@ -96,7 +103,9 @@ export class AuthStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      await firstValueFrom(this.api.verifyOtp(req));
+      await firstValueFrom(
+        this.http.post<{ status: string; message: string }>('/api/v1/auth/verify-otp', req),
+      );
     } catch (err: unknown) {
       const detail = this.extractErrorMessage(err, 'OTP verification failed');
       this.error.set(detail);
@@ -110,7 +119,7 @@ export class AuthStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      await firstValueFrom(this.api.setPin({ pin, password }));
+      await firstValueFrom(this.http.put<void>('/api/v1/auth/pin', { pin, password }));
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const hash = await derivePinHash(pin, salt);
       localStorage.setItem(
@@ -137,29 +146,33 @@ export class AuthStore {
       const jwk = keyRecord.publicKeyJwk;
 
       const deviceResp = await firstValueFrom(
-        this.api.registerDevice({
-          publicKeyJwk: {
-            kty: jwk.kty ?? 'EC',
-            crv: jwk.crv ?? 'P-256',
-            x: jwk.x ?? '',
-            y: jwk.y ?? '',
+        this.devicesApi.devicesPost({
+          'Idempotency-Key': crypto.randomUUID(),
+          body: {
+            publicKeyJwk: {
+              kty: 'EC',
+              crv: 'P-256',
+              x: jwk.x ?? '',
+              y: jwk.y ?? '',
+            },
+            label: label || 'Mobile Browser',
+            userAgent: navigator.userAgent || 'HeyPayments/1.0',
           },
-          label: label || 'Mobile Browser',
-          userAgent: navigator.userAgent || 'HeyPayments/1.0',
         }),
       );
 
+      const deviceId = deviceResp.deviceId ?? '';
       // Synchronize local key record deviceId with server-assigned deviceId
-      if (keyRecord.deviceId !== deviceResp.deviceId) {
-        await this.keys.updateDeviceId(keyRecord.deviceId, deviceResp.deviceId);
+      if (deviceId && keyRecord.deviceId !== deviceId) {
+        await this.keys.updateDeviceId(keyRecord.deviceId, deviceId);
       }
 
       // Persist merchant certificate to Dexie db.certs if issued
-      if (deviceResp.merchantCertificate) {
+      if (deviceResp.merchantCertificate && deviceId) {
         await db.certs.put({
-          id: deviceResp.deviceId,
+          id: deviceId,
           type: 'MC',
-          envelope: deviceResp.merchantCertificate,
+          envelope: deviceResp.merchantCertificate as unknown as ProtocolEnvelope,
           status: 'ACTIVE',
           spent: 0,
           lastCounter: 0,
@@ -182,7 +195,7 @@ export class AuthStore {
   async refreshSession(): Promise<TokenResponse> {
     try {
       const tokenResp = await firstValueFrom(this.refreshService.refreshSession());
-      this.tokenStore.setToken(tokenResp.accessToken, tokenResp.expiresIn);
+      this.tokenStore.setToken(tokenResp.accessToken ?? null, tokenResp.expiresIn);
       return tokenResp;
     } catch (err) {
       await this.logout();
@@ -192,7 +205,7 @@ export class AuthStore {
 
   async logout(): Promise<void> {
     try {
-      await firstValueFrom(this.api.logout());
+      await firstValueFrom(this.http.post<void>('/api/v1/auth/logout', {}));
     } catch {
       // Ignore network errors on logout
     } finally {
@@ -200,8 +213,6 @@ export class AuthStore {
       this.currentUser.set(null);
       this.activeDevice.set(null);
       this.error.set(null);
-      // NOTE: Device keys and certificates are preserved across logout/login
-      // as they identify the enrolled hardware/browser instance.
     }
   }
 

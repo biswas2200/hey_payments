@@ -1,15 +1,16 @@
 /**
- * TypeScript API models matching docs/openapi.yaml (HP-OFFLINE v1).
+ * TypeScript API models re-exported from OpenAPI generated client
+ * with extensions for Phase 1 simulation flows per proposals/002-openapi-phase1.md.
  */
 
-import type { SignedEnvelope } from '../crypto/crypto';
-
-export type Role = 'PAYER' | 'MERCHANT' | 'ADMIN';
+export * from './generated/models';
+import type { SignedEnvelope as ProtocolEnvelope } from '../crypto/crypto';
+import type { Role } from './generated/models/role';
 
 export interface UserSummary {
   id: string;
   role: Role;
-  displayName: string;
+  displayName?: string;
 }
 
 export interface UserProfile {
@@ -22,55 +23,14 @@ export interface UserProfile {
   createdAt: string;
 }
 
-export interface RegisterRequest {
-  phone: string;
-  email?: string;
-  password: string;
-  role: 'PAYER' | 'MERCHANT';
-  displayName?: string;
-}
-
 export interface VerifyOtpRequest {
   phone: string;
   otp: string;
 }
 
-export interface LoginRequest {
-  phone: string;
-  password: string;
-}
-
-export interface TokenResponse {
-  accessToken: string;
-  expiresIn: number;
-  user: UserSummary;
-}
-
 export interface SetPinRequest {
   pin: string;
   password: string;
-}
-
-export interface JwkDto {
-  kid?: string;
-  kty: string;
-  crv: string;
-  x: string;
-  y: string;
-  status?: string;
-}
-
-export interface RegisterDeviceRequest {
-  publicKeyJwk: JwkDto;
-  label?: string;
-  userAgent?: string;
-}
-
-export interface DeviceResponse {
-  deviceId: string;
-  status: 'ACTIVE' | 'FROZEN' | 'REVOKED' | 'CLOSED';
-  lastCounter: number;
-  merchantCertificate?: SignedEnvelope;
 }
 
 export interface ProblemDetail {
@@ -83,3 +43,5 @@ export interface ProblemDetail {
   requestId?: string;
   errors?: { field?: string; message?: string }[];
 }
+
+export type { ProtocolEnvelope };

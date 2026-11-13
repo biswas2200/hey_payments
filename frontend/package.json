@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
+    "api:gen": "ng-openapi-gen --input ../docs/openapi.yaml --output src/app/core/api/generated --services true --promises false",
     "format:check": "prettier --check .",
     "format": "prettier --write ."
   },
@@ -43,6 +44,7 @@
     "eslint": "^10.12.0",
     "fake-indexeddb": "^6.2.8",
     "jsdom": "^30.0.0",
+    "ng-openapi-gen": "^1.1.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "8.71.0",

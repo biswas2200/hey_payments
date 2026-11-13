@@ -28,7 +28,7 @@ export class TokenRefreshService {
         .post<TokenResponse>('/api/v1/auth/refresh', {}, { withCredentials: true })
         .pipe(
           tap((tokenResp) => {
-            this.tokenStore.setToken(tokenResp.accessToken, tokenResp.expiresIn);
+            this.tokenStore.setToken(tokenResp.accessToken ?? null, tokenResp.expiresIn);
           }),
           catchError((err) => {
             this.tokenStore.clear();
