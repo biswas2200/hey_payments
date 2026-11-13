@@ -62,7 +62,7 @@ class LedgerServiceTest extends BaseIntegrationTest {
         jdbcTemplate.queryForObject(
             "SELECT count(*) FROM audit_log WHERE entity = 'JOURNAL_ENTRY' AND entity_id = ?",
             Long.class,
-            entry.id());
+            entry.id().toString());
     assertThat(auditCount).isGreaterThanOrEqualTo(1L);
   }
 
