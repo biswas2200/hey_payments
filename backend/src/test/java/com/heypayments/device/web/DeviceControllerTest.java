@@ -50,6 +50,15 @@ class DeviceControllerTest extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName("GET /devices/me returns 204 No Content when no active device exists")
+  void shouldReturn204WhenNoActiveDevice() throws Exception {
+    String token = registerAndLogin("+919876500013", "PAYER", null);
+    mockMvc
+        .perform(get("/api/v1/devices/me").header("Authorization", "Bearer " + token))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
   @DisplayName(
       "Payer device registration: registers active device and prevents duplicate active devices")
   void shouldRegisterPayerDevice() throws Exception {
