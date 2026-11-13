@@ -5,11 +5,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.heypayments.ledger.application.PostJournalEntryCommand;
 import com.heypayments.ledger.application.PostJournalLineCommand;
+import com.heypayments.ledger.domain.model.AccountType;
 import com.heypayments.ledger.domain.model.EntryKind;
+import com.heypayments.ledger.infra.persistence.LedgerAccountEntity;
 import com.heypayments.shared.domain.exception.DomainException;
 import com.heypayments.shared.domain.exception.ErrorCode;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.ForAll;
@@ -21,9 +25,6 @@ class LedgerInvariantsPropertyTest {
 
   @Property
   void balancedEntriesConserveMoney(@ForAll("balancedLines") List<Long> amounts) {
-    long sum = amounts.stream().mapToLong(Long::longValue).sum();
-    assertThat(sum).isEqualTo(0L);
-
     List<PostJournalLineCommand> lines = new ArrayList<>();
     for (int i = 0; i < amounts.size(); i++) {
       lines.add(new PostJournalLineCommand("ACC:" + i, amounts.get(i)));
@@ -32,6 +33,9 @@ class LedgerInvariantsPropertyTest {
     PostJournalEntryCommand command =
         new PostJournalEntryCommand(EntryKind.ADJUSTMENT, "ref-test", "test memo", lines);
 
+    // Production command validation must succeed without exception
+    command.validate();
+
     assertThat(command.lines()).hasSizeGreaterThanOrEqualTo(2);
     long lineSum = command.lines().stream().mapToLong(PostJournalLineCommand::amount).sum();
     assertThat(lineSum).isEqualTo(0L);
@@ -39,26 +43,16 @@ class LedgerInvariantsPropertyTest {
 
   @Property
   void unbalancedEntriesMustBeRejected(@ForAll("unbalancedLines") List<Long> amounts) {
-    long sum = amounts.stream().mapToLong(Long::longValue).sum();
-    assertThat(sum).isNotEqualTo(0L);
-
     List<PostJournalLineCommand> lines = new ArrayList<>();
     for (int i = 0; i < amounts.size(); i++) {
       lines.add(new PostJournalLineCommand("ACC:" + i, amounts.get(i)));
     }
 
-    // Verify invariant validation logic
-    assertThatThrownBy(
-            () -> {
-              long checkSum = 0L;
-              for (PostJournalLineCommand line : lines) {
-                checkSum += line.amount();
-              }
-              if (checkSum != 0L) {
-                throw new DomainException(
-                    ErrorCode.VALIDATION_FAILED, "Journal entry unbalanced: " + checkSum);
-              }
-            })
+    PostJournalEntryCommand command =
+        new PostJournalEntryCommand(EntryKind.ADJUSTMENT, "ref-test", "test memo", lines);
+
+    // Production command validation must throw VALIDATION_FAILED on unbalanced entries
+    assertThatThrownBy(command::validate)
         .isInstanceOf(DomainException.class)
         .matches(ex -> ((DomainException) ex).getErrorCode() == ErrorCode.VALIDATION_FAILED);
   }
@@ -68,25 +62,35 @@ class LedgerInvariantsPropertyTest {
       @ForAll @IntRange(min = 0, max = 1_000_000) int initialBalance,
       @ForAll("randomDeductions") List<Long> deductions) {
 
-    long balance = initialBalance;
+    LedgerAccountEntity account =
+        LedgerAccountEntity.builder()
+            .id(UUID.randomUUID())
+            .code("USER_MAIN:test")
+            .type(AccountType.USER_MAIN)
+            .currency("INR")
+            .balance((long) initialBalance)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
+
     for (long deduction : deductions) {
-      if (deduction > balance) {
-        // Must reject deduction that would exceed balance
-        long finalBalance = balance;
-        assertThatThrownBy(
-                () -> {
-                  if (finalBalance - deduction < 0L) {
-                    throw new DomainException(ErrorCode.INSUFFICIENT_FUNDS, "Insufficient funds");
-                  }
-                })
-            .isInstanceOf(DomainException.class);
+      if (deduction > account.getBalance()) {
+        // Production entity applyDelta must reject deduction that would make USER_MAIN balance
+        // negative
+        assertThatThrownBy(() -> account.applyDelta(-deduction))
+            .isInstanceOf(DomainException.class)
+            .satisfies(
+                ex -> {
+                  DomainException de = (DomainException) ex;
+                  assertThat(de.getErrorCode()).isEqualTo(ErrorCode.INSUFFICIENT_FUNDS);
+                });
       } else {
-        balance -= deduction;
-        assertThat(balance).isGreaterThanOrEqualTo(0L);
+        account.applyDelta(-deduction);
+        assertThat(account.getBalance()).isGreaterThanOrEqualTo(0L);
       }
     }
 
-    assertThat(balance).isGreaterThanOrEqualTo(0L);
+    assertThat(account.getBalance()).isGreaterThanOrEqualTo(0L);
   }
 
   @Provide

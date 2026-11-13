@@ -57,6 +57,23 @@ describe('WalletStore', () => {
     expect(store.error()).toBeNull();
   });
 
+  it('should reuse provided idempotency key when funding', async () => {
+    const updatedWallet: WalletResponse = {
+      mainBalance: 150000,
+      offlineEscrow: 0,
+      activeBc: undefined,
+    };
+    walletApiMock.walletsMeFundPost.mockReturnValue(of(updatedWallet));
+
+    const testKey = 'custom-idemp-uuid-1234';
+    await store.fundWallet(100000, 'SIM_BANK', testKey);
+
+    expect(walletApiMock.walletsMeFundPost).toHaveBeenCalledWith({
+      'Idempotency-Key': testKey,
+      body: { amount: 100000, source: 'SIM_BANK' },
+    });
+  });
+
   it('should rollback balance on funding failure', async () => {
     store.wallet.set({ mainBalance: 50000, offlineEscrow: 0, activeBc: undefined });
     walletApiMock.walletsMeFundPost.mockReturnValue(

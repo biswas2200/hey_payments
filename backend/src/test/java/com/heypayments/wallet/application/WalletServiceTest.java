@@ -65,7 +65,7 @@ class WalletServiceTest extends BaseIntegrationTest {
     Wallet wallet = walletService.getOrCreateWallet(userId);
 
     String key = "fund-test-" + UUID.randomUUID();
-    WalletResponse response = walletService.fundWallet(userId, 5000L, "SIM_BANK", key);
+    WalletResponse response = walletService.fundWallet(userId, 5000L, "SIM_BANK", key).result();
 
     assertThat(response.mainBalance()).isEqualTo(5000L);
     assertThat(ledgerService.getBalance("USER_MAIN:" + wallet.id()).paise()).isEqualTo(5000L);
@@ -98,14 +98,60 @@ class WalletServiceTest extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName(
+      "HIGH-4: Concurrent funding requests serialize via pessimistic lock and strictly enforce ₹50,000 daily cap")
+  void shouldPreventRaceConditionOnDailyLimit() throws Exception {
+    UUID userId = createRawUser();
+    walletService.getOrCreateWallet(userId);
+
+    int threads = 4;
+    var executor = java.util.concurrent.Executors.newFixedThreadPool(threads);
+    var startLatch = new java.util.concurrent.CountDownLatch(1);
+    var doneLatch = new java.util.concurrent.CountDownLatch(threads);
+    var successes = new java.util.concurrent.atomic.AtomicInteger();
+    var limitExceededCount = new java.util.concurrent.atomic.AtomicInteger();
+
+    // 4 concurrent requests each trying to fund ₹20,000 (2,000,000 paise)
+    // 2 should succeed (40,000 <= 50,000), 2 must fail with LIMIT_EXCEEDED
+    for (int i = 0; i < threads; i++) {
+      String key = UUID.randomUUID().toString();
+      executor.submit(
+          () -> {
+            try {
+              startLatch.await();
+              walletService.fundWallet(userId, 2_000_000L, "SIM_BANK", key);
+              successes.incrementAndGet();
+            } catch (DomainException e) {
+              if (e.getErrorCode() == ErrorCode.LIMIT_EXCEEDED) {
+                limitExceededCount.incrementAndGet();
+              }
+            } catch (Exception ignored) {
+            } finally {
+              doneLatch.countDown();
+            }
+          });
+    }
+
+    startLatch.countDown();
+    doneLatch.await(10, java.util.concurrent.TimeUnit.SECONDS);
+    executor.shutdown();
+
+    assertThat(successes.get()).isEqualTo(2);
+    assertThat(limitExceededCount.get()).isEqualTo(2);
+    assertThat(walletService.getWalletResponse(userId).mainBalance()).isEqualTo(4_000_000L);
+  }
+
+  @Test
   @DisplayName("Fund wallet is idempotent on Idempotency-Key")
   void shouldBeIdempotentOnFunding() {
     UUID userId = createRawUser();
     walletService.getOrCreateWallet(userId);
 
     String idempotencyKey = "idemp-" + UUID.randomUUID();
-    WalletResponse res1 = walletService.fundWallet(userId, 1000L, "SIM_BANK", idempotencyKey);
-    WalletResponse res2 = walletService.fundWallet(userId, 1000L, "SIM_BANK", idempotencyKey);
+    WalletResponse res1 =
+        walletService.fundWallet(userId, 1000L, "SIM_BANK", idempotencyKey).result();
+    WalletResponse res2 =
+        walletService.fundWallet(userId, 1000L, "SIM_BANK", idempotencyKey).result();
 
     assertThat(res1.mainBalance()).isEqualTo(1000L);
     assertThat(res2.mainBalance()).isEqualTo(1000L);

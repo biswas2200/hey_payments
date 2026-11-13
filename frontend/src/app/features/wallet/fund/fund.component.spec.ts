@@ -66,7 +66,31 @@ describe('FundComponent', () => {
     submitBtn.click();
     await fixture.whenStable();
 
-    expect(walletStoreMock.fundWallet).toHaveBeenCalledWith(100000, expect.any(String));
+    expect(walletStoreMock.fundWallet).toHaveBeenCalledWith(
+      100000,
+      expect.any(String),
+      expect.any(String),
+    );
+  });
+
+  it('should reuse pending idempotency key on failure retry (MEDIUM-4)', async () => {
+    walletStoreMock.fundWallet.mockRejectedValueOnce(new Error('Network failure'));
+    component.amount.set(500);
+    fixture.detectChanges();
+
+    const submitBtn = fixture.nativeElement.querySelector('#fund-submit-btn') as HTMLButtonElement;
+    submitBtn.click();
+    await fixture.whenStable();
+
+    const firstKey = component.pendingIdempotencyKey;
+    expect(firstKey).toBeTruthy();
+
+    walletStoreMock.fundWallet.mockResolvedValueOnce({ mainBalance: 100000, offlineEscrow: 0 });
+    submitBtn.click();
+    await fixture.whenStable();
+
+    expect(walletStoreMock.fundWallet).toHaveBeenLastCalledWith(50000, 'SIM_BANK', firstKey);
+    expect(component.pendingIdempotencyKey).toBeNull();
   });
 
   it('should display error message when funding fails', async () => {

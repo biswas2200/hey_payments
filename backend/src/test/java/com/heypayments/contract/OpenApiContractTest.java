@@ -72,7 +72,9 @@ class OpenApiContractTest extends BaseIntegrationTest {
       "/devices",
       "/devices/me",
       "/devices/crl",
-      "/keys/jwks"
+      "/keys/jwks",
+      "/wallets/me",
+      "/wallets/me/fund"
     };
 
     for (String relPath : implementedEndpoints) {
@@ -133,7 +135,9 @@ class OpenApiContractTest extends BaseIntegrationTest {
       "IdResponse",
       "TokenResponse",
       "RegisterDeviceRequest",
-      "DeviceResponse"
+      "DeviceResponse",
+      "WalletResponse",
+      "FundRequest"
     };
 
     for (String schemaName : targetSchemas) {

@@ -110,6 +110,30 @@ class LedgerServiceTest extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName(
+      "MEDIUM-1: should reject posting when line amounts sum overflows 64-bit integer range")
+  void shouldRejectArithmeticOverflowInSum() {
+    String ref = "overflow-" + UUID.randomUUID();
+    PostJournalEntryCommand command =
+        new PostJournalEntryCommand(
+            EntryKind.ADJUSTMENT,
+            ref,
+            "Overflow lines",
+            List.of(
+                new PostJournalLineCommand(bankSimAccount.code(), Long.MIN_VALUE),
+                new PostJournalLineCommand(userMainAccount.code(), Long.MIN_VALUE)));
+
+    assertThatThrownBy(() -> ledgerService.post(command))
+        .isInstanceOf(DomainException.class)
+        .satisfies(
+            ex -> {
+              DomainException de = (DomainException) ex;
+              assertThat(de.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED);
+              assertThat(de.getMessage()).contains("overflowed");
+            });
+  }
+
+  @Test
   @DisplayName("should reject posting when USER_MAIN account would become negative")
   void shouldRejectNegativeBalanceForUserMain() {
     String ref = "overdraft-" + UUID.randomUUID();
