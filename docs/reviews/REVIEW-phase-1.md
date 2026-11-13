@@ -1,3 +1,27 @@
+# Conditions check: Phase 1, 2026-11-13 (@ `6a60700`)
+
+**Verdict: APPROVED.** C1–C4 are done. Merge `phase/1-auth-devices` to `main` and tag `v0.2.0`.
+
+- **C1:** confirmed in the code.
+  - Payers must land exactly on `/pay` and merchants on `/merchant`.
+  - The Dexie test asserts that `pin_salt` and `pin_hash` are strings and that there are zero `hp_pin_*` keys in localStorage.
+  - The MC is now really verified with `crypto.subtle.verify`, and a mutated payload must fail.
+  - The device key must have `extractable === false`.
+  - Protected routes must redirect to login when unauthenticated.
+  - The console filter is gone.
+- **C2:** there's a logout button (`#logout-btn`). The e2e test logs out, lands on `/auth/login`, checks the `hp_rt` cookie is cleared, then logs in again and lands on `/pay`.
+- **C3:** Dexie `version(1)` is unchanged and `version(2)` adds `meta`, with an upgrade test (`db.spec.ts`).
+- **C4:** the property is `hp.crypto.server-key.rotation-cron` in `application.yml`, the code and PROGRESS. It can be overridden with `HP_SERVER_KEY_ROTATION_CRON`.
+- **Extra:** `GET /devices/me` now returns 204 when the user has no device, and the frontend handles it.
+- **How I checked:** I kept the load on the laptop low and didn't start a second stack.
+  - Frontend unit tests: **108/108**.
+  - `DeviceControllerTest` and `ServerKeyServiceTest`: 8/8.
+  - **E2E against your running stack: 8/8, with no console filter.** That also proves the deployed backend returns 204, not 404.
+  - I relied on your report for the full backend suite (123 tests); I verified it at 122 tests at `9389f3d`.
+- The tracked notes are in PROGRESS ✅.
+
+---
+
 # Re-review: Phase 1, 2026-11-13 (@ `9389f3d`)
 
 **Verdict: APPROVED WITH CONDITIONS.** All six MUST-FIX items are fixed, and I confirmed each one independently in a running copy of the stack. Fix conditions C1–C4 on `phase/1-auth-devices` and push. Once I've confirmed them, merge to `main` and tag `v0.2.0`. Do not start Phase 2 until then.
