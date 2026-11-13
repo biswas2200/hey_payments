@@ -7,7 +7,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 import com.heypayments.auth.domain.model.UserRole;
 import com.heypayments.auth.domain.model.UserStatus;
@@ -79,7 +81,9 @@ class AuthServiceTest {
     UUID userId = authService.register(req);
     assertThat(userId).isNotNull();
     assertThat(userId.version()).isEqualTo(7);
-    verify(userRepository).save(any(UserEntity.class));
+    ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+    verify(userRepository).save(captor.capture());
+    assertThat(captor.getValue().getStatus()).isEqualTo(UserStatus.PENDING_VERIFICATION);
     verify(otpService).generateAndSendOtp(eq(req.phone()), eq(req.email()));
 
     // Conflict branch
@@ -133,7 +137,7 @@ class AuthServiceTest {
         UserEntity.builder()
             .id(UUID.randomUUID())
             .phone(phone)
-            .status(UserStatus.LOCKED)
+            .status(UserStatus.PENDING_VERIFICATION)
             .role(UserRole.PAYER)
             .build();
     when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
@@ -141,6 +145,22 @@ class AuthServiceTest {
     authService.verifyOtp(phone, "123456");
     assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
     verify(userRepository).save(user);
+
+    // Locked user cannot be unlocked via OTP
+    UserEntity fraudLockedUser =
+        UserEntity.builder()
+            .id(UUID.randomUUID())
+            .phone(phone)
+            .status(UserStatus.LOCKED)
+            .role(UserRole.PAYER)
+            .build();
+    when(userRepository.findByPhone(phone)).thenReturn(Optional.of(fraudLockedUser));
+    when(otpService.verifyAndConsumeOtp(phone, "123456")).thenReturn(true);
+
+    assertThatThrownBy(() -> authService.verifyOtp(phone, "123456"))
+        .isInstanceOf(DomainException.class)
+        .matches(e -> ((DomainException) e).getErrorCode() == ErrorCode.FORBIDDEN);
+    assertThat(fraudLockedUser.getStatus()).isEqualTo(UserStatus.LOCKED);
   }
 
   @Test
