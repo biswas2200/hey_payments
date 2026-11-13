@@ -35,6 +35,7 @@ public class AuthService {
   private final JwtTokenService jwtTokenService;
   private final RefreshTokenService refreshTokenService;
   private final OtpService otpService;
+  private final PhoneRateLimiter phoneRateLimiter;
   private final Clock clock;
 
   public record LoginResult(TokenResponse tokenResponse, String refreshToken) {}
@@ -82,6 +83,7 @@ public class AuthService {
 
   @Transactional
   public void verifyOtp(String phone, String otp) {
+    phoneRateLimiter.consumeOrThrow(phone);
     boolean valid = otpService.verifyAndConsumeOtp(phone, otp);
     if (!valid) {
       throw new DomainException(ErrorCode.VALIDATION_FAILED, "Invalid or expired OTP");
@@ -95,11 +97,12 @@ public class AuthService {
     user.setStatus(UserStatus.ACTIVE);
     user.setUpdatedAt(clock.instant());
     userRepository.save(user);
-    log.info("User id={} phone={} successfully verified and activated", user.getId(), phone);
+    log.info("User id={} successfully verified and activated", user.getId());
   }
 
   @Transactional
   public LoginResult login(LoginRequest req) {
+    phoneRateLimiter.consumeOrThrow(req.phone());
     UserEntity user =
         userRepository
             .findByPhone(req.phone())

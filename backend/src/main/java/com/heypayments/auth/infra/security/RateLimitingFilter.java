@@ -41,8 +41,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     boolean allowed = true;
     if (path.contains("/auth/login") || path.contains("/auth/verify-otp")) {
-      // 5 requests per minute per IP/phone
-      Bucket bucket = loginBuckets.get(clientIp, k -> createBucket(5, Duration.ofMinutes(1)));
+      // 20 requests per minute per IP for login/verify-otp
+      Bucket bucket = loginBuckets.get(clientIp, k -> createBucket(20, Duration.ofMinutes(1)));
       allowed = bucket.tryConsume(1);
     } else if (!path.startsWith("/actuator")
         && !path.startsWith("/swagger")
@@ -56,15 +56,22 @@ public class RateLimitingFilter extends OncePerRequestFilter {
       log.warn("Rate limit exceeded for path={} ip={}", path, clientIp);
       response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
       response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+      String requestId = org.slf4j.MDC.get(com.heypayments.shared.web.RequestIdFilter.MDC_KEY);
+      if (requestId == null || requestId.isBlank()) {
+        requestId = response.getHeader(com.heypayments.shared.web.RequestIdFilter.REQUEST_ID_HEADER);
+      }
+      if (requestId == null || requestId.isBlank()) {
+        requestId = com.heypayments.shared.infra.id.UuidV7Generator.generate().toString();
+      }
       ProblemResponse problem =
           new ProblemResponse(
-              "urn:problem:rate-limit-exceeded",
-              "Rate Limit Exceeded",
+              ErrorCode.RATE_LIMITED.getTypeUri(),
+              ErrorCode.RATE_LIMITED.getTitle(),
               HttpStatus.TOO_MANY_REQUESTS.value(),
               ErrorCode.RATE_LIMITED.name(),
               "Too many requests. Please try again later.",
               request.getRequestURI(),
-              null,
+              requestId,
               Collections.emptyList());
       objectMapper.writeValue(response.getOutputStream(), problem);
       return;

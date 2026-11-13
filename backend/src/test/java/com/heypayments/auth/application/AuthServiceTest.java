@@ -38,6 +38,7 @@ class AuthServiceTest {
   private JwtTokenService jwtTokenService;
   private RefreshTokenService refreshTokenService;
   private OtpService otpService;
+  private PhoneRateLimiter phoneRateLimiter;
   private Clock clock;
   private AuthService authService;
 
@@ -51,6 +52,7 @@ class AuthServiceTest {
     jwtTokenService = mock(JwtTokenService.class);
     refreshTokenService = mock(RefreshTokenService.class);
     otpService = mock(OtpService.class);
+    phoneRateLimiter = mock(PhoneRateLimiter.class);
     clock = Clock.fixed(now, ZoneId.of("UTC"));
 
     authService =
@@ -61,6 +63,7 @@ class AuthServiceTest {
             jwtTokenService,
             refreshTokenService,
             otpService,
+            phoneRateLimiter,
             clock);
   }
 
