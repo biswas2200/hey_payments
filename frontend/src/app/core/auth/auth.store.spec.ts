@@ -17,9 +17,13 @@ describe('AuthStore', () => {
   let authApiMock: {
     authLoginPost: ReturnType<typeof vi.fn>;
     authRegisterPost: ReturnType<typeof vi.fn>;
+    authVerifyOtpPost: ReturnType<typeof vi.fn>;
+    authLogoutPost: ReturnType<typeof vi.fn>;
+    authPinPut: ReturnType<typeof vi.fn>;
   };
   let devicesApiMock: {
     devicesPost: ReturnType<typeof vi.fn>;
+    devicesMeGet: ReturnType<typeof vi.fn>;
   };
   let httpMock: {
     get: ReturnType<typeof vi.fn>;
@@ -59,16 +63,19 @@ describe('AuthStore', () => {
     authApiMock = {
       authLoginPost: vi.fn().mockReturnValue(of(mockTokenResponse)),
       authRegisterPost: vi.fn().mockReturnValue(of({ id: 'new-user-id' })),
+      authVerifyOtpPost: vi.fn().mockReturnValue(of(undefined)),
+      authLogoutPost: vi.fn().mockReturnValue(of(undefined)),
+      authPinPut: vi.fn().mockReturnValue(of(undefined)),
     };
 
     devicesApiMock = {
       devicesPost: vi.fn().mockReturnValue(of(mockDeviceResponse)),
+      devicesMeGet: vi.fn().mockReturnValue(of(mockDeviceResponse)),
     };
 
     httpMock = {
       get: vi.fn().mockImplementation((url: string) => {
         if (url.includes('/users/me')) return of(mockUserProfile);
-        if (url.includes('/devices/me')) return of(mockDeviceResponse);
         return of({});
       }),
       post: vi.fn().mockReturnValue(of({ status: 'SUCCESS', message: 'Phone verified' })),
@@ -119,7 +126,7 @@ describe('AuthStore', () => {
 
     expect(authApiMock.authLoginPost).toHaveBeenCalled();
     expect(httpMock.get).toHaveBeenCalledWith('/api/v1/users/me');
-    expect(httpMock.get).toHaveBeenCalledWith('/api/v1/devices/me');
+    expect(devicesApiMock.devicesMeGet).toHaveBeenCalled();
     expect(store.accessToken()).toBe('mock-jwt-token-xyz');
     expect(store.currentUser()).toEqual(mockUserProfile);
     expect(store.activeDevice()).toEqual(mockDeviceResponse);
@@ -130,11 +137,7 @@ describe('AuthStore', () => {
   });
 
   it('should login successfully and set activeDevice null when GET /devices/me returns null (204)', async () => {
-    httpMock.get.mockImplementation((url: string) => {
-      if (url.includes('/users/me')) return of(mockUserProfile);
-      if (url.includes('/devices/me')) return of(null);
-      return of({});
-    });
+    devicesApiMock.devicesMeGet.mockReturnValue(of(null as any));
 
     await store.login({ phone: '+919876543210', password: 'Password123!' });
     expect(store.isAuthenticated()).toBe(true);
@@ -186,14 +189,18 @@ describe('AuthStore', () => {
 
   it('should verify OTP successfully', async () => {
     await store.verifyOtp({ phone: '+919876543210', otp: '123456' });
-    expect(httpMock.post).toHaveBeenCalledWith('/api/v1/auth/verify-otp', {
-      phone: '+919876543210',
-      otp: '123456',
+    expect(authApiMock.authVerifyOtpPost).toHaveBeenCalledWith({
+      body: {
+        phone: '+919876543210',
+        otp: '123456',
+      },
     });
   });
 
   it('should handle verify OTP failure', async () => {
-    httpMock.post.mockReturnValue(throwError(() => ({ error: { detail: 'Invalid OTP code' } })));
+    authApiMock.authVerifyOtpPost.mockReturnValue(
+      throwError(() => ({ error: { detail: 'Invalid OTP code' } })),
+    );
 
     await expect(store.verifyOtp({ phone: '+919876543210', otp: '000000' })).rejects.toBeDefined();
     expect(store.error()).toBe('Invalid OTP code');
@@ -243,14 +250,16 @@ describe('AuthStore', () => {
 
   it('should set payment PIN', async () => {
     await store.setPin('123456', 'Password123!');
-    expect(httpMock.put).toHaveBeenCalledWith('/api/v1/auth/pin', {
-      pin: '123456',
-      password: 'Password123!',
+    expect(authApiMock.authPinPut).toHaveBeenCalledWith({
+      body: {
+        pin: '123456',
+        password: 'Password123!',
+      },
     });
   });
 
   it('should handle setPin error', async () => {
-    httpMock.put.mockReturnValue(throwError(() => ({ error: { detail: 'Weak PIN' } })));
+    authApiMock.authPinPut.mockReturnValue(throwError(() => ({ error: { detail: 'Weak PIN' } })));
 
     await expect(store.setPin('000000', 'Password123!')).rejects.toBeDefined();
     expect(store.error()).toBe('Weak PIN');
@@ -304,7 +313,7 @@ describe('AuthStore', () => {
     expect(store.isAuthenticated()).toBe(true);
 
     await store.logout();
-    expect(httpMock.post).toHaveBeenCalledWith('/api/v1/auth/logout', {});
+    expect(authApiMock.authLogoutPost).toHaveBeenCalled();
     expect(keyServiceMock.clearKeys).not.toHaveBeenCalled();
     expect(store.currentUser()).toBeNull();
     expect(store.accessToken()).toBeNull();

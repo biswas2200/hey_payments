@@ -61,12 +61,21 @@ class OpenApiContractTest extends BaseIntegrationTest {
     JsonNode implementedPathsNode = apiDocsNode.get("paths");
     assertThat(implementedPathsNode).isNotNull();
 
-    // Phase 1 endpoints defined in docs/openapi.yaml
-    String[] phase1ContractEndpoints = {
-      "/auth/register", "/auth/login", "/auth/refresh", "/devices", "/devices/crl", "/keys/jwks"
+    // Implemented endpoints defined in docs/openapi.yaml
+    String[] implementedEndpoints = {
+      "/auth/register",
+      "/auth/login",
+      "/auth/verify-otp",
+      "/auth/refresh",
+      "/auth/logout",
+      "/auth/pin",
+      "/devices",
+      "/devices/me",
+      "/devices/crl",
+      "/keys/jwks"
     };
 
-    for (String relPath : phase1ContractEndpoints) {
+    for (String relPath : implementedEndpoints) {
       String expectedImplementedPath = "/api/v1" + relPath;
       JsonNode pathNode = implementedPathsNode.get(expectedImplementedPath);
       assertThat(pathNode)
@@ -83,13 +92,71 @@ class OpenApiContractTest extends BaseIntegrationTest {
             .isTrue();
       }
     }
+  }
 
-    // Verify intentional additions documented in docs/proposals/002-openapi-phase1.md
-    assertThat(implementedPathsNode.get("/api/v1/auth/verify-otp"))
-        .as("Intentional addition /api/v1/auth/verify-otp must be implemented")
-        .isNotNull();
-    assertThat(implementedPathsNode.get("/api/v1/auth/logout"))
-        .as("Intentional addition /api/v1/auth/logout must be implemented")
-        .isNotNull();
+  @Test
+  @DisplayName("should match request and response schemas of implemented endpoints")
+  void shouldMatchRequestAndResponseSchemas() throws Exception {
+    MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+
+    Path specPath = Paths.get("../docs/openapi.yaml").toAbsolutePath().normalize();
+    if (!Files.exists(specPath)) {
+      specPath = Paths.get("docs/openapi.yaml").toAbsolutePath().normalize();
+    }
+    assertThat(Files.exists(specPath)).as("docs/openapi.yaml must exist").isTrue();
+
+    Map<String, Object> contractYaml;
+    try (InputStream in = Files.newInputStream(specPath)) {
+      contractYaml = new Yaml().load(in);
+    }
+    @SuppressWarnings("unchecked")
+    Map<String, Object> contractSchemas =
+        (Map<String, Object>) ((Map<String, Object>) contractYaml.get("components")).get("schemas");
+
+    String body =
+        mockMvc
+            .perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    JsonNode apiDocsNode = objectMapper.readTree(body);
+    JsonNode implementedSchemas = apiDocsNode.get("components").get("schemas");
+    assertThat(implementedSchemas).isNotNull();
+
+    // Verify key request/response schemas exist and property sets match
+    String[] targetSchemas = {
+      "RegisterRequest",
+      "LoginRequest",
+      "VerifyOtpRequest",
+      "SetPinRequest",
+      "IdResponse",
+      "TokenResponse",
+      "RegisterDeviceRequest",
+      "DeviceResponse"
+    };
+
+    for (String schemaName : targetSchemas) {
+      assertThat(implementedSchemas.has(schemaName))
+          .as("Schema %s must exist in Springdoc /v3/api-docs", schemaName)
+          .isTrue();
+
+      @SuppressWarnings("unchecked")
+      Map<String, Object> expectedSchema = (Map<String, Object>) contractSchemas.get(schemaName);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> expectedProps = (Map<String, Object>) expectedSchema.get("properties");
+
+      JsonNode liveSchemaNode = implementedSchemas.get(schemaName);
+      JsonNode liveProps = liveSchemaNode.get("properties");
+      assertThat(liveProps)
+          .as("Properties node must exist for schema %s", schemaName)
+          .isNotNull();
+
+      for (String propName : expectedProps.keySet()) {
+        assertThat(liveProps.has(propName))
+            .as("Property '%s' in schema '%s' must match /v3/api-docs", propName, schemaName)
+            .isTrue();
+      }
+    }
   }
 }
