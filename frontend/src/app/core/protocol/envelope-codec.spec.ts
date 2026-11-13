@@ -17,6 +17,28 @@ const SAMPLE_ENV = {
   s: 'BASE64URL_SIG',
 };
 
+/**
+ * Returns a deterministic large envelope whose encoded length exceeds 1800 chars.
+ * Uses 300 deterministic UUID-shaped strings (high entropy → low DEFLATE ratio).
+ */
+function makeLargeEnvelope(): unknown {
+  // Deterministic UUID-shaped strings using LCG PRNG (a=1664525, c=1013904223)
+  let seed = 0xdeadbeef;
+  function nextHex(len: number): string {
+    let s = '';
+    while (s.length < len) {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      s += seed.toString(16).padStart(8, '0');
+    }
+    return s.slice(0, len);
+  }
+  function uuid(): string {
+    return `${nextHex(8)}-${nextHex(4)}-4${nextHex(3)}-${nextHex(4)}-${nextHex(12)}`;
+  }
+  const ids = Array.from({ length: 300 }, uuid);
+  return { p: { v: 1, t: 'VC', ids }, s: uuid() };
+}
+
 describe('EnvelopeCodec.encode / decode round-trip', () => {
   it('encodes to a string starting with HP1:PR:', () => {
     const encoded = EnvelopeCodec.encode(SAMPLE_ENV, 'PR');
@@ -35,30 +57,26 @@ describe('EnvelopeCodec.encode / decode round-trip', () => {
   });
 
   it('encodes large payload into multiple frames', () => {
-    // Build a payload large enough to exceed 1800 chars when encoded
-    const large = { p: { v: 1, t: 'VC', data: 'X'.repeat(3000) }, s: 'SIG' };
+    const large = makeLargeEnvelope();
     const frames = EnvelopeCodec.encode(large, 'VC');
     expect(frames.length).toBeGreaterThan(1);
   });
 
   it('multipart frames use format HP1:<TYPE>:<n>/<total>:<data>', () => {
-    const large = { p: { v: 1, t: 'VC', data: 'X'.repeat(3000) }, s: 'SIG' };
+    const large = makeLargeEnvelope();
     const frames = EnvelopeCodec.encode(large, 'VC');
-    if (frames.length > 1) {
-      expect(frames[0]).toMatch(/^HP1:VC:1\/\d+:/);
-      expect(frames[1]).toMatch(/^HP1:VC:2\/\d+:/);
-    }
+    expect(frames.length).toBeGreaterThan(1);
+    expect(frames[0]).toMatch(/^HP1:VC:1\/\d+:/);
+    expect(frames[1]).toMatch(/^HP1:VC:2\/\d+:/);
   });
 
   it('decode assembles multipart frames regardless of arrival order', () => {
-    const large = { p: { v: 1, t: 'VC', data: 'X'.repeat(3000) }, s: 'SIG' };
+    const large = makeLargeEnvelope();
     const frames = EnvelopeCodec.encode(large, 'VC');
-    if (frames.length > 1) {
-      // Feed in reverse order
-      const reversed = [...frames].reverse();
-      const result = EnvelopeCodec.decode(reversed);
-      expect(result).toEqual(large);
-    }
+    expect(frames.length).toBeGreaterThan(1);
+    const reversed = [...frames].reverse();
+    const result = EnvelopeCodec.decode(reversed);
+    expect(result).toEqual(large);
   });
 });
 
