@@ -23,15 +23,22 @@ export interface CertRecord {
   createdAt: string;
 }
 
+export interface MetaRecord {
+  key: string;
+  value: unknown;
+}
+
 export class HeyPaymentsDb extends Dexie {
   keys!: Table<KeyRecord, string>;
   certs!: Table<CertRecord, string>;
+  meta!: Table<MetaRecord, string>;
 
   constructor() {
     super('heypayments');
     this.version(1).stores({
       keys: 'deviceId, createdAt',
       certs: 'id, type, status, lastCounter',
+      meta: 'key',
     });
   }
 }

@@ -122,19 +122,73 @@ export class AuthStore {
       await firstValueFrom(this.http.put<void>('/api/v1/auth/pin', { pin, password }));
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const hash = await derivePinHash(pin, salt);
-      localStorage.setItem(
-        'hp_pin_salt',
-        Array.from(salt)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join(''),
-      );
-      localStorage.setItem('hp_pin_hash', hash);
+      const saltHex = Array.from(salt)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      await db.meta.put({ key: 'pin_salt', value: saltHex });
+      await db.meta.put({ key: 'pin_hash', value: hash });
+      await db.meta.put({ key: 'pin_failed_attempts', value: 0 });
+      await db.meta.put({ key: 'pin_lockout_until', value: null });
+
+      localStorage.removeItem('hp_pin_salt');
+      localStorage.removeItem('hp_pin_hash');
     } catch (err: unknown) {
       const detail = this.extractErrorMessage(err, 'Failed to set payment PIN');
       this.error.set(detail);
       throw err;
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async verifyPin(pin: string): Promise<boolean> {
+    const lockoutUntilRecord = await db.meta.get('pin_lockout_until');
+    const lockoutUntil = lockoutUntilRecord?.value as number | null;
+    const now = Date.now();
+
+    if (lockoutUntil && now < lockoutUntil) {
+      const remainingMinutes = Math.max(1, Math.ceil((lockoutUntil - now) / 60_000));
+      throw new Error(
+        `PIN verification locked due to excessive failed attempts. Try again in ${remainingMinutes} minute(s).`,
+      );
+    }
+
+    const saltRecord = await db.meta.get('pin_salt');
+    const hashRecord = await db.meta.get('pin_hash');
+    if (!saltRecord?.value || !hashRecord?.value) {
+      throw new Error('PIN has not been configured on this device.');
+    }
+
+    const saltHex = saltRecord.value as string;
+    const storedHash = hashRecord.value as string;
+    const saltBytes = new Uint8Array(
+      saltHex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) ?? [],
+    );
+
+    const computedHash = await derivePinHash(pin, saltBytes);
+
+    if (computedHash === storedHash) {
+      await db.meta.put({ key: 'pin_failed_attempts', value: 0 });
+      await db.meta.put({ key: 'pin_lockout_until', value: null });
+      return true;
+    }
+
+    const attemptsRecord = await db.meta.get('pin_failed_attempts');
+    const currentAttempts = ((attemptsRecord?.value as number) || 0) + 1;
+
+    if (currentAttempts >= 5) {
+      const lockDurationMs = 30 * 60 * 1000; // 30 minutes
+      const newLockoutUntil = now + lockDurationMs;
+      await db.meta.put({ key: 'pin_failed_attempts', value: currentAttempts });
+      await db.meta.put({ key: 'pin_lockout_until', value: newLockoutUntil });
+      throw new Error('Too many incorrect PIN attempts. Account locked for 30 minutes.');
+    } else {
+      await db.meta.put({ key: 'pin_failed_attempts', value: currentAttempts });
+      const remaining = 5 - currentAttempts;
+      throw new Error(
+        `Incorrect PIN. ${remaining} attempt(s) remaining before a 30-minute lockout.`,
+      );
     }
   }
 

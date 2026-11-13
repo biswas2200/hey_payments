@@ -8,6 +8,7 @@ import { DevicesService } from '../api/generated/services/devices.service';
 import { KeyService } from '../crypto/key.service';
 import { TokenRefreshService } from './token-refresh.service';
 import { TokenStore } from './token.store';
+import { setPbkdf2IterationsForTesting } from '../crypto/crypto';
 import { db } from '../offline/db';
 import type { DeviceResponse, TokenResponse, UserProfile } from '../api/models';
 
@@ -54,6 +55,7 @@ describe('AuthStore', () => {
   };
 
   beforeEach(() => {
+    setPbkdf2IterationsForTesting(1000);
     authApiMock = {
       authLoginPost: vi.fn().mockReturnValue(of(mockTokenResponse)),
       authRegisterPost: vi.fn().mockReturnValue(of({ id: 'new-user-id' })),

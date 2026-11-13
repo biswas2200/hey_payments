@@ -175,6 +175,15 @@ export async function sha256Hex(data: Uint8Array | string): Promise<string> {
 }
 
 export const DEFAULT_PBKDF2_ITERATIONS = 600_000;
+let configuredPbkdf2Iterations: number | null = null;
+
+export function setPbkdf2IterationsForTesting(iterations: number | null): void {
+  configuredPbkdf2Iterations = iterations;
+}
+
+export function getPbkdf2Iterations(): number {
+  return configuredPbkdf2Iterations ?? DEFAULT_PBKDF2_ITERATIONS;
+}
 
 /**
  * Derives a 256-bit PBKDF2 hash using HMAC-SHA-256 and configurable iterations
@@ -183,7 +192,7 @@ export const DEFAULT_PBKDF2_ITERATIONS = 600_000;
 export async function derivePinHash(
   pin: string,
   salt: Uint8Array,
-  iterations: number = DEFAULT_PBKDF2_ITERATIONS,
+  iterations: number = getPbkdf2Iterations(),
 ): Promise<string> {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
