@@ -19,6 +19,7 @@ Read these in order at the start of **every** session, and re-read the relevant 
 ## 2. Phase discipline
 - Work **only** on the current phase in `12-implementation-plan.md`. Do not build ahead, and don't "quickly add" later-phase features.
 - Branch per phase: `phase/<N>-<name>`. Small Conventional Commits (`feat(ledger): …`, `test(voucher): …`, `fix(sync): …`, `chore(docker): …`).
+- **Never run `git push`, `git push --force`, `git rebase` of shared branches, `git reset --hard` on `main`, or create or move tags.** Commit locally only. All worktrees share one repository, so the architect sees your commits without a push. **The architect alone pushes branches, merges to `main` and tags releases**, after review. Never commit to `main` directly.
 - At the end of the phase: run the full gate (§8), run the bug-hunt agent (§7), update `PROGRESS.md` (§9), then **STOP** and tell the user: "Phase N ready for architect review."
 - If a review file contains **MUST-FIX** items, fix them first, each with a regression test, before anything else.
 
@@ -149,11 +150,12 @@ From Phase 2 on, two builder agents work at the same time, split by **layer**, n
 - Report per phase **part**: `docs/progress/phase-<N>-be.md` or `docs/progress/phase-<N>-fe.md` (template §9). Never edit the other track's report.
 
 **Reviews and merging**
+- Agents commit locally; the architect reviews, pushes, merges and tags (§2). Never push.
 - The architect reviews each part separately ("Phase 3 BE", "Phase 3 FE"). A phase is done when both parts are approved and the e2e acceptance test passes against the stack.
-- Whichever part is approved first merges to `main` first. The other track then merges `main` into its branch and re-runs its gate.
+- Whichever part is approved first is merged to `main` first (by the architect). The other track then runs `git merge main` in its worktree (local `main`, no fetch needed) and re-runs its gate.
 
 **When one track finishes first:** finish your own gate and report, then help the other track **without crossing layers**:
-1. Run the §7 REVIEWER_PROMPT on the other track's branch (a different model makes a better reviewer). Write `docs/reviews/AGENT-REVIEW-<part>.md` on a `review/…` branch, push it, and tell the owner.
+1. Run the §7 REVIEWER_PROMPT on the other track's branch (a different model makes a better reviewer). Write `docs/reviews/AGENT-REVIEW-<part>.md` on a local `review/…` branch (commit, don't push) and tell the owner.
 2. Start the next backend (or frontend) task from the plan on a new branch. Never take tasks from the other layer.
 Your own MUST-FIX items always come first.
 
