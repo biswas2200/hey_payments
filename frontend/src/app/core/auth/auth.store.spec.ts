@@ -129,6 +129,18 @@ describe('AuthStore', () => {
     expect(store.error()).toBeNull();
   });
 
+  it('should login successfully and set activeDevice null when GET /devices/me returns null (204)', async () => {
+    httpMock.get.mockImplementation((url: string) => {
+      if (url.includes('/users/me')) return of(mockUserProfile);
+      if (url.includes('/devices/me')) return of(null);
+      return of({});
+    });
+
+    await store.login({ phone: '+919876543210', password: 'Password123!' });
+    expect(store.isAuthenticated()).toBe(true);
+    expect(store.activeDevice()).toBeNull();
+  });
+
   it('should handle login failure and set error signal', async () => {
     authApiMock.authLoginPost.mockReturnValue(
       throwError(() => ({ error: { detail: 'Invalid credentials' } })),

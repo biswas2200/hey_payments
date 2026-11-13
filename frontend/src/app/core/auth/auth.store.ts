@@ -58,9 +58,9 @@ export class AuthStore {
       this.currentUser.set(profile);
 
       try {
-        const device = await firstValueFrom(this.http.get<DeviceResponse>('/api/v1/devices/me'));
-        this.activeDevice.set(device);
-        if (device.merchantCertificate && device.deviceId) {
+        const device = await firstValueFrom(this.http.get<DeviceResponse | null>('/api/v1/devices/me'));
+        this.activeDevice.set(device ?? null);
+        if (device && device.merchantCertificate && device.deviceId) {
           await db.certs.put({
             id: device.deviceId,
             type: 'MC',
