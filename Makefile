@@ -34,14 +34,14 @@ test-be:
 	cd backend && ./mvnw clean verify -Dsurefire.runOrder=random
 
 test-fe:
-	cd frontend && npm test -- --watch=false
+	cd frontend && npm test -- --no-watch
 
 e2e:
 	cd frontend && NODE_PATH=node_modules npx playwright test --config=../playwright.config.ts
 
 lint:
 	cd backend && ./mvnw spotless:check checkstyle:check
-	cd frontend && npm run lint && npm run format:check
+	cd frontend && npm run api:gen && git diff --exit-code src/app/core/api/generated && npm run lint && npm run format:check
 
 fmt:
 	cd backend && ./mvnw spotless:apply

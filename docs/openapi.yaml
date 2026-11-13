@@ -45,13 +45,51 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
         '401': { $ref: '#/components/responses/Problem' }
         '429': { $ref: '#/components/responses/Problem' }
+  /auth/verify-otp:
+    post:
+      tags: [auth]
+      security: []
+      description: Activates a PENDING_VERIFICATION user. LOCKED or DISABLED users get 403 (proposal 003).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyOtpRequest' }
+      responses:
+        '200': { description: Verified (empty body) }
+        '400': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
   /auth/refresh:
     post:
       tags: [auth]
       security: []
+      description: Reads the hp_rt cookie (HttpOnly, SameSite=Strict, Path=/api/v1/auth). Rotates it; reuse revokes the family. Cross-origin Origin/Referer gets 403.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
         '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+  /auth/logout:
+    post:
+      tags: [auth]
+      security: []
+      description: Revokes the refresh-token family from the hp_rt cookie and clears the cookie.
+      responses:
+        '204': { description: Logged out }
+  /auth/pin:
+    put:
+      tags: [auth]
+      description: PAYER only. Records that an offline PIN was set (the PIN hash itself stays on the device).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetPinRequest' }
+      responses:
+        '204': { description: PIN set }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
   /keys/jwks:
     get:
       tags: [devices]
@@ -69,7 +107,24 @@ paths:
             schema: { $ref: '#/components/schemas/RegisterDeviceRequest' }
       responses:
         '201': { description: Registered, content: { application/json: { schema: { $ref: '#/components/schemas/DeviceResponse' } } } }
+        '400': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
+  /devices/me:
+    get:
+      tags: [devices]
+      responses:
+        '200': { description: The caller's active device (merchants also get their MC), content: { application/json: { schema: { $ref: '#/components/schemas/DeviceResponse' } } } }
+        '204': { description: No active device yet }
+        '401': { $ref: '#/components/responses/Problem' }
+  /devices/{id}:
+    delete:
+      tags: [devices]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Device closed }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
   /devices/crl:
     get:
       tags: [devices]
@@ -210,6 +265,18 @@ components:
       type: object
       required: [phone, password]
       properties: { phone: { type: string }, password: { type: string } }
+    VerifyOtpRequest:
+      type: object
+      required: [phone, otp]
+      properties:
+        phone: { type: string }
+        otp: { type: string, pattern: '^[0-9]{6}$' }
+    SetPinRequest:
+      type: object
+      required: [pin, password]
+      properties:
+        pin: { type: string, pattern: '^[0-9]{6}$' }
+        password: { type: string }
     TokenResponse:
       type: object
       properties:

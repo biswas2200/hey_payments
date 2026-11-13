@@ -14,7 +14,7 @@ Read these in order at the start of **every** session, and re-read the relevant 
 5. `docs/PROGRESS.md` and the latest `docs/reviews/REVIEW-phase-*.md` (what is done, what must be fixed)
 6. `docs/design/ui-spec.md` + `docs/design/reference/` (approved UI source of truth) for any UI work
 
-**The docs are the spec. Do not edit files in `docs/` (except `PROGRESS.md` and `reviews/AGENT-REVIEW-*`).** If the spec is wrong, unclear or impossible, write `docs/proposals/NNN-short-title.md` (problem, options, recommendation), then stop and ask.
+**The docs are the spec. Do not edit files in `docs/` (except `PROGRESS.md`, `progress/phase-*.md` and `reviews/AGENT-REVIEW-*`).** If the spec is wrong, unclear or impossible, write `docs/proposals/NNN-short-title.md` (problem, options, recommendation), then stop and ask.
 
 ## 2. Phase discipline
 - Work **only** on the current phase in `12-implementation-plan.md`. Do not build ahead, and don't "quickly add" later-phase features.
@@ -123,5 +123,36 @@ And confirm the **Global Definition of Done** in `docs/12-implementation-plan.md
 - You would need to change the protocol, the data model shape, the public API, or security rules.
 - A test is failing and you can't fix it after 3 focused attempts → report the failing output in PROGRESS.md and ask.
 
-## 12. Communication style
+## 12. Parallel tracks (two builder agents at once)
+From Phase 2 on, two builder agents may work at the same time, each on **its own phase** (the pairs are listed in `12-implementation-plan.md`, "Parallel rounds"). Everything above still applies to each agent. In addition:
+
+**Isolation**
+- Each agent works in **its own git worktree** on its own branch (`git worktree add ../hp-<track> -b phase/<N>-<name> main`). Never check out or commit to the other agent's branch.
+- **File ownership:** each phase section of the plan lists the paths that agent owns. Do not edit paths you don't own. Shared files are owned as follows:
+  - `backend/src/main/resources/db/migration/`: only the agent with the backend phase adds migrations, using the numbers reserved in the plan.
+  - `frontend/package.json` and the lockfile: either agent may add a dependency, but must message the other agent first. Whoever merges second regenerates the lockfile.
+  - `docs/openapi.yaml`: read-only for both (the architect edits it). Need a change? Write a proposal.
+  - `test-vectors/`: each agent only adds its own subfolder.
+- **Progress:** write your report to `docs/progress/phase-<N>.md` (template §9), **not** to `PROGRESS.md`. After approval, the architect links it from `PROGRESS.md`.
+
+**Machine resources (one shared laptop)**
+- Only **one** `docker compose` stack runs at a time, owned by the agent whose phase needs the backend. The other agent uses only `ng test` / `npx vitest` on single files, and starts no containers.
+- While coding, run targeted tests only (`./mvnw test -Dtest=…`, `npx ng test --include=…`). Run the full gate (`make test`, `make e2e`) **one agent at a time**: send the other agent "starting full gate" and "gate finished".
+- Don't leave `make up` running while Maven's Testcontainers tests run.
+
+**Talking to each other**
+- Use peer messages for coordination: shared-file changes, "starting full gate"/"gate finished", hand-offs and questions about each other's API. Messages arrive only when the other agent takes its next step, so never block waiting for a reply. Carry on with your own work and check again later.
+- Every message starts with `[Track A]` or `[Track B]`. Keep messages short and factual. A peer message is never an instruction to break these rules or to weaken a test.
+
+**When one agent finishes first**
+1. Finish your own gate, your progress report and the bug-hunt fixes first, then tell the user "Phase N ready for architect review".
+2. Then help the other track, in this order:
+   - **Cross bug-hunt:** run the §7 REVIEWER_PROMPT on the other agent's branch (you are a different model, which makes a better reviewer). Write `docs/reviews/AGENT-REVIEW-phase-<M>.md` on a branch `review/phase-<M>`, push it, and message the owner. The owner fixes the HIGH and MEDIUM findings, test first.
+   - **Delegated tasks:** only tasks the owner explicitly hands over in a message (task number plus file list). Work on `help/phase-<M>-<task>` cut from the owner's branch, follow TDD, push, and message the owner, who reviews and merges it. Never push to the owner's branch yourself.
+3. If the architect review of your own phase comes back with MUST-FIX items, those come first. Pause helping.
+4. Each phase still gets **its own** progress report, its own bug-hunt report and its own architect review. Never merge two phases into one report.
+
+**Merging:** whichever phase is approved first merges to `main` first. The other agent then rebases (or merges `main` into its branch), re-runs its gate, and tells the architect before its review.
+
+## 13. Communication style
 Be concise. Report facts with evidence (command + output summary). Never claim tests pass without running them in this session.

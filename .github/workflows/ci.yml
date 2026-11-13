@@ -32,6 +32,8 @@ jobs:
         run: |
           cd frontend
           npm ci
+          npm run api:gen
+          git diff --exit-code src/app/core/api/generated
           npm run lint
           npm run format:check
 

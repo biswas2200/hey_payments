@@ -3,6 +3,7 @@ package com.heypayments.shared.web;
 import java.time.Instant;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +19,7 @@ public class HealthController {
    * @return response entity with status map
    */
   @GetMapping("/health")
+  @PreAuthorize("permitAll()")
   public ResponseEntity<Map<String, Object>> healthCheck() {
     return ResponseEntity.ok(
         Map.of(

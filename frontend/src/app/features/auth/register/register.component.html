@@ -1,0 +1,117 @@
+<div class="auth-card">
+  <div class="header">
+    <div class="logo-box">
+      <img src="/brand/logo-mark.svg" alt="Hey Payments Logo" width="48" height="48" />
+    </div>
+    <h1 class="title">Create Account</h1>
+    <p class="subtitle">Join Hey Payments for fast offline-first payments</p>
+  </div>
+
+  @if (formError() || auth.error()) {
+    <div class="error-banner" role="alert">
+      {{ formError() || auth.error() }}
+    </div>
+  }
+
+  <form (ngSubmit)="onSubmit()" class="form-body">
+    <div class="role-selector" role="radiogroup" aria-label="Account Role">
+      <button
+        type="button"
+        role="radio"
+        class="role-btn"
+        [class.active]="role() === 'PAYER'"
+        [attr.aria-checked]="role() === 'PAYER'"
+        (click)="role.set('PAYER')"
+      >
+        Payer
+      </button>
+      <button
+        type="button"
+        role="radio"
+        class="role-btn"
+        [class.active]="role() === 'MERCHANT'"
+        [attr.aria-checked]="role() === 'MERCHANT'"
+        (click)="role.set('MERCHANT')"
+      >
+        Merchant
+      </button>
+    </div>
+
+    <div class="field">
+      <label for="reg-phone" class="label">Mobile Number</label>
+      <div class="input-group">
+        <span class="prefix">+91</span>
+        <input
+          id="reg-phone"
+          name="phone"
+          type="tel"
+          [ngModel]="phone()"
+          (ngModelChange)="phone.set($event)"
+          placeholder="98765 43210"
+          class="input with-prefix"
+          required
+          autocomplete="tel-national"
+        />
+      </div>
+    </div>
+
+    @if (role() === 'MERCHANT') {
+      <div class="field">
+        <label for="display-name" class="label">Store / Business Name</label>
+        <input
+          id="display-name"
+          name="displayName"
+          type="text"
+          [ngModel]="displayName()"
+          (ngModelChange)="displayName.set($event)"
+          placeholder="e.g. Ravi General Store"
+          class="input"
+          required
+        />
+      </div>
+    }
+
+    <div class="field">
+      <label for="reg-email" class="label">Email Address (Optional)</label>
+      <input
+        id="reg-email"
+        name="email"
+        type="email"
+        [ngModel]="email()"
+        (ngModelChange)="email.set($event)"
+        placeholder="name@example.com"
+        class="input"
+        autocomplete="email"
+      />
+    </div>
+
+    <div class="field">
+      <label for="reg-password" class="label">Password (min 10 characters)</label>
+      <input
+        id="reg-password"
+        name="password"
+        type="password"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+        placeholder="At least 10 characters"
+        class="input"
+        required
+        minlength="10"
+        autocomplete="new-password"
+      />
+    </div>
+
+    <button type="submit" class="btn btn-primary" [disabled]="auth.loading()">
+      @if (auth.loading()) {
+        Registering...
+      } @else {
+        Create Account
+      }
+    </button>
+
+    <div class="footer-links">
+      <span class="muted">Already registered?</span>
+      <a routerLink="/auth/login" class="link">Sign in instead</a>
+    </div>
+  </form>
+</div>

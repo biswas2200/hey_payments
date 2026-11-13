@@ -1,0 +1,48 @@
+{
+  "description": "Cross-language ECDSA P-256 / SHA-256 / IEEE P1363 test vector",
+  "privateKeyPkcs8Base64": "MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCDLewethywSzWGEEiyFCm+gRwq+814YcDfUo9+dRnBfFA==",
+  "publicKeySec1Base64Url": "BLfvGIZu2oYkvoU-1nbYGNO1LyTvxsKXv0hBvZssWPng1K3ERrcwbjOXlZDXGpAGq7cyy6tA7GvdsnkhCI2FfSU",
+  "publicKeyJwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "kid": "srv-test-key-01",
+    "x": "t-8Yhm7ahiS-hT7WdtgY07UvJO_Gwpe_SEG9myxY-eA",
+    "y": "1K3ERrcwbjOXlZDXGpAGq7cyy6tA7GvdsnkhCI2FfSU"
+  },
+  "wrongPublicKeyJwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "kid": "srv-wrong-key-99",
+    "x": "2-Js_vlrJ5J2BsHUBcELflg9WrowDaH19A7MvnmyuvA",
+    "y": "BmFYOvc23iLjPnbIxNXw7uriFUhCKi1PH5ZOVGw85Uk"
+  },
+  "payload": {
+    "v": 1,
+    "t": "MC",
+    "merchantId": "01931234-5678-7000-8000-000000000001",
+    "deviceId": "01931234-5678-7000-8000-000000000009",
+    "displayName": "Ravi General Store",
+    "issuedAt": "2026-11-12T10:00:00Z"
+  },
+  "canonicalJson": "{\"deviceId\":\"01931234-5678-7000-8000-000000000009\",\"displayName\":\"Ravi General Store\",\"issuedAt\":\"2026-11-12T10:00:00Z\",\"merchantId\":\"01931234-5678-7000-8000-000000000001\",\"t\":\"MC\",\"v\":1}",
+  "signatureP1363Base64Url": "RQKPeUJI4o_nzAMm7K0gxlfHA0QMrskSwzU3oVk3kMEqe0WTrDAd5T6dPv8IQGDxEHGT03z3YQGytKC2IRV6gA",
+  "malformedSignatureLengthBase64Url": "RQKPeUJI4o_nzAMm7K0gxlfHA0QMrskSwzU3oVk3kMEqe0WTrDAd5T6dPv8IQGDx",
+  "tamperedPayload": {
+    "v": 1,
+    "t": "MC",
+    "merchantId": "01931234-5678-7000-8000-000000000001",
+    "deviceId": "01931234-5678-7000-8000-000000000009",
+    "displayName": "Malicious Store",
+    "issuedAt": "2026-11-12T10:00:00Z"
+  },
+  "nonIntegerPayload": {
+    "v": 1,
+    "t": "VC",
+    "amount": 100.5
+  },
+  "overflowNumberPayload": {
+    "v": 1,
+    "t": "VC",
+    "amount": 9007199254740992
+  }
+}

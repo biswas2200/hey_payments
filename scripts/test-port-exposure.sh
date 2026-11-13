@@ -58,4 +58,8 @@ if ! echo "$PROD_COMPOSE_OUT" | grep -q "SPRING_DATA_REDIS_PASSWORD: changeme"; 
     echo "ERROR: backend service environment in docker compose does not configure SPRING_DATA_REDIS_PASSWORD" >&2
     exit 1
 fi
-echo "PROD COMPOSE CONFIG CHECK PASSED: SPRING_DATA_REDIS_PASSWORD is wired correctly."
+if ! echo "$PROD_COMPOSE_OUT" | grep -q "HP_MASTER_KEY: base64-32-bytes-change-me"; then
+    echo "ERROR: backend service environment in docker compose does not configure HP_MASTER_KEY" >&2
+    exit 1
+fi
+echo "PROD COMPOSE CONFIG CHECK PASSED: SPRING_DATA_REDIS_PASSWORD and HP_MASTER_KEY are wired correctly."
