@@ -4,12 +4,15 @@ import { of, throwError } from 'rxjs';
 import { AuthStore } from './auth.store';
 import { AuthApiService } from '../api/auth-api.service';
 import { KeyService } from '../crypto/key.service';
+import { TokenRefreshService } from './token-refresh.service';
+import { TokenStore } from './token.store';
 import type { DeviceResponse, TokenResponse, UserProfile } from '../api/models';
 
 describe('AuthStore', () => {
   let store: AuthStore;
   let apiMock: Partial<AuthApiService>;
   let keyServiceMock: Partial<KeyService>;
+  let refreshServiceMock: { refreshSession: ReturnType<typeof vi.fn> };
 
   const mockTokenResponse: TokenResponse = {
     accessToken: 'mock-jwt-token-xyz',
@@ -60,11 +63,17 @@ describe('AuthStore', () => {
       clearKeys: vi.fn().mockResolvedValue(undefined),
     };
 
+    refreshServiceMock = {
+      refreshSession: vi.fn().mockReturnValue(of(mockTokenResponse)),
+    };
+
     TestBed.configureTestingModule({
       providers: [
+        TokenStore,
         AuthStore,
         { provide: AuthApiService, useValue: apiMock },
         { provide: KeyService, useValue: keyServiceMock },
+        { provide: TokenRefreshService, useValue: refreshServiceMock },
       ],
     });
 
@@ -185,7 +194,7 @@ describe('AuthStore', () => {
   });
 
   it('should logout if refresh session fails', async () => {
-    (apiMock.refresh as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+    refreshServiceMock.refreshSession.mockReturnValue(
       throwError(() => new Error('Token revoked')),
     );
 

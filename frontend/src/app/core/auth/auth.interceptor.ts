@@ -1,6 +1,7 @@
 /**
  * Functional HTTP Interceptor for Authentication
- * Attaches Bearer token, enables credentials, and auto-refreshes on 401.
+ * Attaches Bearer token from TokenStore, enables credentials, and auto-refreshes on 401 via TokenRefreshService.
+ * Completely dependency-free from AuthStore to eliminate circular DI cycles (NG0200).
  */
 
 import { inject } from '@angular/core';
@@ -11,11 +12,9 @@ import {
   HttpErrorResponse,
   type HttpInterceptorFn,
 } from '@angular/common/http';
-import { Observable, catchError, switchMap, throwError, from, shareReplay, finalize } from 'rxjs';
-import { AuthStore } from './auth.store';
-import type { TokenResponse } from '../api/models';
-
-let activeRefresh$: Observable<TokenResponse> | null = null;
+import { Observable, catchError, switchMap, throwError } from 'rxjs';
+import { TokenStore } from './token.store';
+import { TokenRefreshService } from './token-refresh.service';
 
 const PUBLIC_URL_PATTERNS = [
   '/auth/login',
@@ -29,10 +28,12 @@ const PUBLIC_URL_PATTERNS = [
 export function authInterceptor(
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
-  injectedAuthStore?: AuthStore,
+  injectedTokenStore?: TokenStore,
+  injectedRefreshService?: TokenRefreshService,
 ): Observable<HttpEvent<unknown>> {
-  const store = injectedAuthStore ?? inject(AuthStore);
-  const token = store.accessToken();
+  const tokenStore = injectedTokenStore ?? inject(TokenStore);
+  const refreshService = injectedRefreshService ?? inject(TokenRefreshService);
+  const token = tokenStore.accessToken();
 
   const isPublic = PUBLIC_URL_PATTERNS.some((pattern) => req.url.includes(pattern));
 
@@ -55,16 +56,7 @@ export function authInterceptor(
         err.status === 401 &&
         !req.url.includes('/auth/refresh')
       ) {
-        if (!activeRefresh$) {
-          activeRefresh$ = from(store.refreshSession()).pipe(
-            shareReplay(1),
-            finalize(() => {
-              activeRefresh$ = null;
-            }),
-          );
-        }
-
-        return activeRefresh$.pipe(
+        return refreshService.refreshSession().pipe(
           switchMap((newTokenResp) => {
             const retriedReq = modifiedReq.clone({
               setHeaders: {

@@ -48,4 +48,16 @@ export const routes: Routes = [
       },
     ],
   },
+  {
+    path: 'pay',
+    canActivate: [canActivateAuth],
+    loadComponent: () =>
+      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+  },
+  {
+    path: 'merchant',
+    canActivate: [canActivateAuth],
+    loadComponent: () =>
+      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+  },
 ];

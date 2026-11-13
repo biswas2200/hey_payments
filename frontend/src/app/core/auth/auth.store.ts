@@ -9,6 +9,8 @@ import { AuthApiService } from '../api/auth-api.service';
 import { KeyService } from '../crypto/key.service';
 import { derivePinHash } from '../crypto/crypto';
 import { db } from '../offline/db';
+import { TokenStore } from './token.store';
+import { TokenRefreshService } from './token-refresh.service';
 import type {
   DeviceResponse,
   LoginRequest,
@@ -23,8 +25,13 @@ import type {
   providedIn: 'root',
 })
 export class AuthStore {
+  private readonly tokenStore = inject(TokenStore);
+  private readonly refreshService = inject(TokenRefreshService);
+  private readonly api = inject(AuthApiService);
+  private readonly keys = inject(KeyService);
+
   readonly currentUser = signal<UserProfile | null>(null);
-  readonly accessToken = signal<string | null>(null);
+  readonly accessToken = this.tokenStore.accessToken;
   readonly activeDevice = signal<DeviceResponse | null>(null);
   readonly loading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
@@ -34,15 +41,12 @@ export class AuthStore {
   readonly isPayer = computed(() => this.role() === 'PAYER');
   readonly isMerchant = computed(() => this.role() === 'MERCHANT');
 
-  private readonly api = inject(AuthApiService);
-  private readonly keys = inject(KeyService);
-
   async login(req: LoginRequest): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
       const tokenResp = await firstValueFrom(this.api.login(req));
-      this.accessToken.set(tokenResp.accessToken);
+      this.tokenStore.setToken(tokenResp.accessToken, tokenResp.expiresIn);
 
       const profile = await firstValueFrom(this.api.getMe());
       this.currentUser.set(profile);
@@ -177,8 +181,8 @@ export class AuthStore {
 
   async refreshSession(): Promise<TokenResponse> {
     try {
-      const tokenResp = await firstValueFrom(this.api.refresh());
-      this.accessToken.set(tokenResp.accessToken);
+      const tokenResp = await firstValueFrom(this.refreshService.refreshSession());
+      this.tokenStore.setToken(tokenResp.accessToken, tokenResp.expiresIn);
       return tokenResp;
     } catch (err) {
       await this.logout();
@@ -192,7 +196,7 @@ export class AuthStore {
     } catch {
       // Ignore network errors on logout
     } finally {
-      this.accessToken.set(null);
+      this.tokenStore.clear();
       this.currentUser.set(null);
       this.activeDevice.set(null);
       this.error.set(null);

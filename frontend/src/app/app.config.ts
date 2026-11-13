@@ -4,9 +4,11 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideAuthInterceptor } from './core/auth/auth.interceptor';
+import { KeyService } from './core/crypto/key.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    KeyService,
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(withFetch(), withInterceptors([provideAuthInterceptor])),
