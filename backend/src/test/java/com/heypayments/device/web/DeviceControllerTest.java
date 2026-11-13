@@ -158,7 +158,7 @@ class DeviceControllerTest extends BaseIntegrationTest {
   @Test
   @DisplayName("registerDevice should reject invalid EC point with 400 VALIDATION_FAILED")
   void shouldRejectInvalidEcPointOnDeviceRegistration() throws Exception {
-    String token = registerAndLogin("+919876543888", "PAYER", null);
+    String token = registerAndLogin("+919876500012", "PAYER", null);
 
     byte[] badPoint = new byte[32];
     badPoint[31] = 0x01;

@@ -18,6 +18,8 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.security.Principal;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -106,6 +108,8 @@ public class AuthController {
     return ResponseEntity.noContent().build();
   }
 
+  private static final Set<String> ALLOWED_ORIGIN_HOSTS = Set.of("localhost", "127.0.0.1", "nginx");
+
   private void validateOriginOrReferer(HttpServletRequest request) {
     String origin = request.getHeader("Origin");
     String referer = request.getHeader("Referer");
@@ -121,9 +125,7 @@ public class AuthController {
         String serverName = request.getServerName();
         boolean allowed =
             host.equalsIgnoreCase(serverName)
-                || host.equalsIgnoreCase("localhost")
-                || host.equalsIgnoreCase("127.0.0.1")
-                || host.equalsIgnoreCase("nginx");
+                || ALLOWED_ORIGIN_HOSTS.contains(host.toLowerCase(Locale.ROOT));
         if (!allowed) {
           throw new DomainException(ErrorCode.FORBIDDEN, "Cross-origin refresh forbidden");
         }
