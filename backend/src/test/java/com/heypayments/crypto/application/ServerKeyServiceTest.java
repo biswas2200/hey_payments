@@ -23,7 +23,8 @@ class ServerKeyServiceTest extends BaseIntegrationTest {
   @Autowired private org.springframework.core.env.Environment env;
 
   @Test
-  @DisplayName("should configure server key rotation cron via hp.crypto.server-key.rotation-cron property")
+  @DisplayName(
+      "should configure server key rotation cron via hp.crypto.server-key.rotation-cron property")
   void shouldResolveRotationCronProperty() {
     assertThat(env.getProperty("hp.crypto.server-key.rotation-cron")).isEqualTo("0 0 2 * * ?");
   }

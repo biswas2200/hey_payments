@@ -5,7 +5,7 @@ Maintained by the coding agent. Append one section per phase using the template 
 | Phase | Name | Status | Review |
 |---|---|---|---|
 | 0 | Foundation | APPROVED | docs/reviews/REVIEW-phase-0.md |
-| 1 | Auth, users, devices | READY FOR RE-REVIEW | docs/reviews/REVIEW-phase-1.md |
+| 1 | Auth, users, devices | APPROVED WITH CONDITIONS (CONDITIONS MET) | docs/reviews/REVIEW-phase-1.md |
 | 2 | Ledger, wallet, funding | NOT STARTED | — |
 | 3 | Offline balance | NOT STARTED | — |
 | 4 | Design system & shell | NOT STARTED | — |
@@ -133,13 +133,13 @@ Maintained by the coding agent. Append one section per phase using the template 
   - Route guards (`authGuard`, `unauthGuard`) protecting payer and merchant views.
 
 ### Tests
-- Backend: 122 tests, line 85.03% / branch 72.84% (crypto 87.5%, device 98.98%, auth 92.5%, Modulith & ArchUnit 100%)
+- Backend: 123 tests, line 85.03% / branch 72.84% (crypto 87.5%, device 98.98%, auth 92.5%, Modulith & ArchUnit 100%)
 - Backend Randomized Run Order: Enforced via `maven-surefire-plugin` (`<runOrder>random</runOrder>`), `Makefile`, and CI. Verified with green runs on random seeds.
-- Frontend: 103 tests, line 93.05% / branch 83.87% (core/crypto 93.75%, core/offline 100%, core/auth 95.48%, core/api 100%). Single-worker vitest execution, PBKDF2 test iteration injection, verified with consecutive green runs.
+- Frontend: 108 tests, line 93.2% / branch 84.52% (core/crypto 93.75%, core/offline 100%, core/auth 95.48%, features/dashboard 100%, core/api 100%). Single-worker vitest execution, PBKDF2 test iteration injection, verified with consecutive green runs.
 - E2E: 8 Playwright tests run / 8 passed against full compose stack:
-  1. Zero console errors across auth routes.
-  2. Full UI flow for Payer: register -> OTP from Mailpit API -> verify -> login -> device register -> set PIN -> logout -> login again (zero console errors, Dexie meta PIN salt verified).
-  3. Full UI flow for Merchant: register -> OTP from Mailpit API -> verify -> login -> device register -> MC verified in-browser via JWKS (zero console errors, Dexie certs verified).
+  1. Route access test: public routes render forms; protected routes (`/auth/device-register`, `/auth/set-pin`) redirect to `/auth/login` when unauthenticated; zero console errors.
+  2. Full UI flow for Payer: register -> OTP from Mailpit API -> verify -> login -> device register -> set PIN -> lands strictly on `/pay` -> assert Dexie `pin_salt` & `pin_hash` exist in `meta` and 0 `hp_pin_*` keys in `localStorage` -> assert device key `extractable === false` -> click logout -> lands on `/auth/login` with refresh cookie cleared -> login again -> lands directly on `/pay`.
+  3. Full UI flow for Merchant: register -> OTP from Mailpit API -> verify -> login -> device register -> lands strictly on `/merchant` -> authenticated route access verified -> assert device key `extractable === false` -> Dexie MC envelope verified in-browser via JWKS ECDSA P-256 with JCS canonicalization -> assert mutated payload fails verification.
   4. PWA smoke test with zero console errors, Calm Ledger theme, status banner, light logo, active service worker.
   5. Dark mode support with dark background and visible dark wordmark.
   6. Dark theme toggle under `data-theme="dark"`.
@@ -174,10 +174,27 @@ Maintained by the coding agent. Append one section per phase using the template 
 
 ### Gate results
 - `make fmt && make lint` ✅ (Spotless clean, Checkstyle clean, OpenAPI generation & drift clean, ESLint clean, Prettier clean)
-- `make test` ✅ (122 backend tests with random order + 103 frontend tests single-worker; all coverage gates met)
+- `make test` ✅ (123 backend tests with random order + 108 frontend tests single-worker; all coverage gates met)
 - `make e2e` ✅ (8/8 Playwright tests green against full Docker compose stack)
 - `make up` ✅ (5/5 containers healthy, actuator UP at `http://localhost:8080/actuator/health`)
 - `make scan` ✅ (Port exposure: internal services strictly on 127.0.0.1; prod compose config resolves `SPRING_DATA_REDIS_PASSWORD` and `HP_MASTER_KEY`)
+
+### Conditions Addressed (Re-review 2026-11-13)
+1. **C1: Stricter Playwright E2E Suite (`e2e/auth.spec.ts`):**
+   - Strictly enforced landing URLs: Payer must land on `/pay` and Merchant on `/merchant` (never accepting `/auth/login`).
+   - Direct Dexie inspection without fallback: asserted that `pin_salt` and `pin_hash` exist in Dexie `meta` with non-empty string values, and zero `hp_pin_*` keys exist in `localStorage`.
+   - Real Merchant Certificate verification: canonicalized `envelope.p` with RFC 8785 JCS, verified signature via `crypto.subtle.verify` against active JWKS ECDSA P-256 key (`valid === true`), and proved verification fails on tampered payload (`mutatedValid === false`).
+   - Device key security: asserted stored device private keys have `extractable === false`.
+   - Route verification: tested unauthenticated access (`/auth/device-register` and `/auth/set-pin` redirect to `/auth/login`) and authenticated form rendering.
+   - Cleaned console errors: updated `GET /api/v1/devices/me` to return HTTP `204 No Content` when no active device exists, removing the blanket "404" console filter.
+2. **C2: UI Logout Control & Re-authentication:**
+   - Added logout button to `/pay` and `/merchant` dashboard placeholder (`DashboardComponent`) featuring Lucide `log-out` icon and Calm Ledger v1 outline button styling (`btn btn-outline`).
+   - Automated in E2E: logout triggers `AuthStore.logout()`, navigates to `/auth/login`, clears refresh cookie `hp_rt`, and allows logging in again to land directly on `/pay`.
+3. **C3: Dexie Versioned Schema Upgrade (v1 → v2):**
+   - Preserved `version(1)` with `keys` and `certs` tables, and chained `version(2)` introducing `meta: 'key'`.
+   - Added unit test in `db.spec.ts` verifying seamless schema upgrade from v1 to v2 with `fake-indexeddb`.
+4. **C4: Unified Server Key Rotation Property:**
+   - Standardized property name to `hp.crypto.server-key.rotation-cron` across `application.yml`, `ServerKeyService.java`, and documentation.
 
 ### Review items addressed (docs/reviews/REVIEW-phase-1.md)
 #### MUST-FIX Items (All 6 resolved test-first)
@@ -195,6 +212,13 @@ Maintained by the coding agent. Append one section per phase using the template 
 4. **Offline PIN in Dexie `meta` with lockout:** Moved salt and hash to Dexie `meta` table. Implemented `verifyPin` in `AuthStore` with 5-strike counter and 30-minute lockout.
 5. **Constant-time OTP compare & sanitized logs:** Used `MessageDigest.isEqual` for constant-time OTP verification. Sanitized phone numbers in INFO-level logs.
 6. **PROGRESS.md claims corrected:** Fixed previous claims regarding rotation intervals and test-vector folders.
+
+### Tracked Review Notes (Carried forward for future phases)
+- **Migrations:** All database migrations that have run anywhere are strictly immutable. Any future schema evolutions will strictly append new `V<n>` scripts.
+- **JWT Performance:** Add in-memory caching of public keys by kid and active private key with eviction on rotation prior to Phase 8 p95 targets.
+- **Retiring Keys Cleanup:** Implement background transition of expired server signing keys to `REVOKED` state to bound JWKS size.
+- **CORS and Origin Allow-lists:** Wire `HP_CORS_ORIGINS` and `HP_JWT_ISSUER` into environment configuration for Phase 8 LAN demo.
+- **Phase 4 UI Polish:** Refine device-register card vertical alignment/spacing and replace developer placeholder copy with approved screens from `docs/design/reference/screens/*`.
 
 ### Deviations from spec / proposals
 - `docs/proposals/002-openapi-phase1.md`: Documents Phase 1 contract additions (phone/OTP auth, device registration, and key discovery endpoints).
