@@ -13,6 +13,16 @@ Work **one phase at a time**. Each phase ends at a **gate**: Definition of Done 
 - [ ] Bug-hunt agent report saved to `docs/reviews/AGENT-REVIEW-phase-N.md`, and all HIGH/MEDIUM findings fixed with regression tests.
 - [ ] `docs/PROGRESS.md` updated with the template in AGENTS.md §9.
 
+## Parallel rounds (two builder agents)
+From Phase 2 on, two agents build two phases at once (rules: AGENTS.md §12). Each phase keeps its own gate, progress file (`docs/progress/phase-N.md`), bug-hunt report and architect review.
+| Round | Track A | Track B | Release after the round |
+|---|---|---|---|
+| 1 | Phase 2: ledger, wallet, funding | Phase 5a: offline protocol library | — |
+| 2 | Phase 3: offline balance | Phase 4: design system and app shell | `v0.3.0` (money in + look and feel) |
+| 3 | Phase 6: sync, settlement, fraud | Phase 5b: offline payment on devices | `v0.6.0` offline-pay MVP |
+| 4 | Phase 7: merchant and admin | — | `v0.8.0` |
+| 5 | Phase 8: hardening | — | `v1.0.0` |
+
 ---
 
 ## Phase 0: Foundation (scaffold hardening)
@@ -47,7 +57,7 @@ Work **one phase at a time**. Each phase ends at a **gate**: Definition of Done 
 ## Phase 2: Ledger, wallet, funding simulator
 | # | Task |
 |---|---|
-| 2.1 | V4/V5 migrations; system accounts seed |
+| 2.1 | V5/V6 migrations (V4 is taken by Phase 1); system accounts seed |
 | 2.2 | `LedgerService.post(entry)` with Σ=0 enforcement, optimistic locking, idempotent reference, balance queries |
 | 2.3 | Property-based tests of ledger invariants; concurrency test |
 | 2.4 | Wallet creation on PAYER registration (event), `GET /wallets/me`, `POST /wallets/me/fund` (simulator, daily cap), idempotency filter (Redis) |
@@ -56,10 +66,12 @@ Work **one phase at a time**. Each phase ends at a **gate**: Definition of Done 
 
 **Acceptance:** funding updates the balance; replaying the same Idempotency-Key does not double-credit; 100 concurrent fund requests keep the ledger balanced.
 
+**Owns (parallel track A):** `backend/**` (migrations V5–V6 only), `frontend/src/app/features/home/**`, `frontend/src/app/features/wallet/**`, `frontend/src/app/core/api/generated/**` (regenerate only), `e2e/wallet*.spec.ts`, `test-vectors/ledger/` (if any).
+
 ## Phase 3: Offline balance (load/unload, Balance Certificates)
 | # | Task |
 |---|---|
-| 3.1 | V6 migration; BC issuance per protocol §3.1 (supersede, counterStart, limits) |
+| 3.1 | V7 migration; BC issuance per protocol §3.1 (supersede, counterStart, limits) |
 | 3.2 | `POST /offline/load` with `SYNC_REQUIRED` precondition; `POST /offline/unload`; expiry sweep job |
 | 3.3 | CRL includes CLOSED BCs/devices |
 | 3.4 | Frontend: load-offline flow (education screen → amount → confirm → BC stored + verified), offline balance card, unload |
@@ -79,7 +91,21 @@ Work **one phase at a time**. Each phase ends at a **gate**: Definition of Done 
 
 **Acceptance:** side-by-side with `reference/screens/*.png`, layout, hierarchy, colour, type and copy match. Logo and icons are the provided SVGs (not redrawn). axe reports 0 serious/critical issues. The app is installable. Later phases (5–7) must build P3–P6, M1–M4 and A1 to the same reference and add a visual test for each.
 
-## Phase 5: Offline payment on devices
+## Phase 5a: Offline protocol library (pure TypeScript, parallel track B)
+Tasks 5.1 and 5.2 of Phase 5, built and reviewed as their own phase, before the UI. No Angular, no backend, no Docker: inputs are the messages in doc 03 §3, with Balance and Merchant Certificates as **test fixtures** signed by a fixed test server key.
+| # | Task |
+|---|---|
+| 5a.1 | `core/crypto`: Base45 (RFC 9285), raw DEFLATE, `EnvelopeCodec` (doc 03 §3.6), multipart QR frames (split/reassemble, out-of-order, missing-part detection) |
+| 5a.2 | `core/protocol`: `PrBuilder`/`PrVerifier` (P1–P6), `VoucherBuilder` (counter, prevHash, cumSpent), `VoucherVerifier` (M1–M8), `ReceiptBuilder`/`ReceiptVerifier`. Pure functions with an injected clock |
+| 5a.3 | Every rule and every doc 03 §9 edge case that can be checked offline has a named negative test (tampered, wrong key, expired, replayed counter, broken hash chain, over limit, wrong merchant, revoked device in the CRL, etc.) |
+| 5a.4 | `test-vectors/protocol/`: fixed-key vectors for PR, VC, RC and the envelope encoding, positive and negative. Phase 6's Java verifier must pass the same files |
+
+**Acceptance:** 100% of P1–P6 and M1–M8 covered by tests that fail when the rule is removed; ≥95% line coverage on `core/crypto` and `core/protocol`; vectors are deterministic (re-running the generator changes nothing).
+
+**Owns (parallel track B):** `frontend/src/app/core/protocol/**`, new files in `frontend/src/app/core/crypto/**` (existing `crypto.ts`/`jcs.ts` may only gain exports, never change behaviour), `test-vectors/protocol/**`. No migrations, no backend, no screens.
+
+## Phase 5 (5b): Offline payment on devices
+Tasks 5.1–5.2 are done in Phase 5a. Phase 5b builds on that library.
 | # | Task |
 |---|---|
 | 5.1 | `core/crypto`: Base45, raw DEFLATE, EnvelopeCodec, multipart frames |
@@ -95,7 +121,7 @@ Work **one phase at a time**. Each phase ends at a **gate**: Definition of Done 
 ## Phase 6: Sync, settlement, fraud
 | # | Task |
 |---|---|
-| 6.1 | V7/V8 migrations |
+| 6.1 | V8/V9 migrations |
 | 6.2 | `POST /sync` per-item processing, ordering, idempotency, S1–S7 |
 | 6.3 | SettlementService postings incl. fee, risk-reserve path, HELD/REVERSED with the claim-window job |
 | 6.4 | Fraud rules + cases + automatic freeze + CRL update |
@@ -110,7 +136,7 @@ Work **one phase at a time**. Each phase ends at a **gate**: Definition of Done 
 |---|---|
 | 7.1 | Merchant summary, settlements list, CSV export, payouts (simulated) |
 | 7.2 | Admin: KPIs (HEART/AARRR counters), users, devices (freeze/unfreeze), ledger explorer, reconciliation, fraud case workflow, limits editor |
-| 7.3 | V9 reporting views |
+| 7.3 | V10 reporting views |
 | 7.4 | Frontend screens per Canva; charts accessible (table fallback) |
 
 **Acceptance:** an admin can investigate and resolve a fraud case end-to-end; a merchant can export settlements; all admin actions are audited.

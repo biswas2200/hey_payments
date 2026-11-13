@@ -236,3 +236,10 @@ Maintained by the coding agent. Append one section per phase using the template 
 6. Login at http://localhost:8081/auth/login.
 7. Enroll device at http://localhost:8081/auth/device-register and configure spending PIN at http://localhost:8081/auth/set-pin.
 8. Run `make e2e` to execute the full automated verification suite.
+
+---
+
+## From Phase 2: per-phase reports
+Phase reports now live in [`docs/progress/`](progress/README.md), one file per phase, because two agents build in parallel (AGENTS.md §12).
+- Phase 2: [progress/phase-2.md](progress/phase-2.md) (pending)
+- Phase 5a: [progress/phase-5a.md](progress/phase-5a.md) (pending)
