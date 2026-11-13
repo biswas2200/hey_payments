@@ -5,14 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.heypayments.ledger.application.PostJournalEntryCommand;
 import com.heypayments.ledger.application.PostJournalLineCommand;
-import com.heypayments.ledger.domain.model.AccountType;
 import com.heypayments.ledger.domain.model.EntryKind;
 import com.heypayments.shared.domain.exception.DomainException;
 import com.heypayments.shared.domain.exception.ErrorCode;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.ForAll;
@@ -58,7 +55,8 @@ class LedgerInvariantsPropertyTest {
                 checkSum += line.amount();
               }
               if (checkSum != 0L) {
-                throw new DomainException(ErrorCode.VALIDATION_FAILED, "Journal entry unbalanced: " + checkSum);
+                throw new DomainException(
+                    ErrorCode.VALIDATION_FAILED, "Journal entry unbalanced: " + checkSum);
               }
             })
         .isInstanceOf(DomainException.class)

@@ -148,9 +148,7 @@ class OpenApiContractTest extends BaseIntegrationTest {
 
       JsonNode liveSchemaNode = implementedSchemas.get(schemaName);
       JsonNode liveProps = liveSchemaNode.get("properties");
-      assertThat(liveProps)
-          .as("Properties node must exist for schema %s", schemaName)
-          .isNotNull();
+      assertThat(liveProps).as("Properties node must exist for schema %s", schemaName).isNotNull();
 
       for (String propName : expectedProps.keySet()) {
         assertThat(liveProps.has(propName))

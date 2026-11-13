@@ -30,8 +30,10 @@ export class WalletStore {
     try {
       const resp = await firstValueFrom(this.walletApi.walletsMeGet());
       this.wallet.set(resp);
-    } catch (err: any) {
-      const message = err?.error?.detail ?? err?.message ?? 'Failed to load wallet';
+    } catch (err: unknown) {
+      const apiErr = err as { error?: { detail?: string } };
+      const fallbackErr = err as Error;
+      const message = apiErr?.error?.detail ?? fallbackErr?.message ?? 'Failed to load wallet';
       this.error.set(message);
     } finally {
       this.loading.set(false);
@@ -61,11 +63,13 @@ export class WalletStore {
       );
       this.wallet.set(resp);
       return resp;
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Rollback optimistic update
       this.wallet.set(prevWallet);
+      const apiErr = err as { error?: { detail?: string; title?: string } };
+      const fallbackErr = err as Error;
       const message =
-        err?.error?.detail ?? err?.error?.title ?? err?.message ?? 'Funding failed';
+        apiErr?.error?.detail ?? apiErr?.error?.title ?? fallbackErr?.message ?? 'Funding failed';
       this.error.set(message);
       throw err;
     } finally {

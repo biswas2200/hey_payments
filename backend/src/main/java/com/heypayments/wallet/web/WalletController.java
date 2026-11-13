@@ -44,8 +44,7 @@ public class WalletController {
       Principal principal) {
     UUID userId = UUID.fromString(principal.getName());
     WalletResponse response =
-        walletService.fundWallet(
-            userId, request.amount(), request.source(), idempotencyKey);
+        walletService.fundWallet(userId, request.amount(), request.source(), idempotencyKey);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 }

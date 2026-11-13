@@ -85,7 +85,8 @@ class LedgerConcurrencyIntegrationTest extends BaseIntegrationTest {
 
     // Invariant 1: Global sum of all account balances in the database is strictly 0
     Long globalSum =
-        jdbcTemplate.queryForObject("SELECT COALESCE(SUM(balance), 0) FROM ledger_accounts", Long.class);
+        jdbcTemplate.queryForObject(
+            "SELECT COALESCE(SUM(balance), 0) FROM ledger_accounts", Long.class);
     assertThat(globalSum).isEqualTo(0L);
 
     // Invariant 2: Balance on each account strictly matches the sum of its journal lines

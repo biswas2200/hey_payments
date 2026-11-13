@@ -7,10 +7,20 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { signal } from '@angular/core';
 
 describe('HomeComponent', () => {
-  let component: HomeComponent;
   let fixture: ComponentFixture<HomeComponent>;
-  let walletStoreMock: any;
-  let authStoreMock: any;
+  let walletStoreMock: {
+    wallet: ReturnType<typeof signal>;
+    mainBalance: ReturnType<typeof signal>;
+    offlineEscrow: ReturnType<typeof signal>;
+    mainBalanceFormatted: ReturnType<typeof signal>;
+    offlineEscrowFormatted: ReturnType<typeof signal>;
+    loading: ReturnType<typeof signal>;
+    loadWallet: ReturnType<typeof vi.fn>;
+  };
+  let authStoreMock: {
+    currentUser: ReturnType<typeof signal>;
+    logout: ReturnType<typeof vi.fn>;
+  };
   let routerMock: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
@@ -43,7 +53,6 @@ describe('HomeComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(HomeComponent);
-    component = fixture.componentInstance;
     fixture.detectChanges();
   });
 

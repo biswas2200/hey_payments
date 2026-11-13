@@ -10,11 +10,11 @@ import com.heypayments.ledger.infra.persistence.JournalLineEntity;
 import com.heypayments.ledger.infra.persistence.JournalLineRepository;
 import com.heypayments.ledger.infra.persistence.LedgerAccountEntity;
 import com.heypayments.ledger.infra.persistence.LedgerAccountRepository;
-import com.heypayments.shared.infra.id.UuidV7Generator;
 import com.heypayments.shared.domain.exception.DomainException;
 import com.heypayments.shared.domain.exception.ErrorCode;
 import com.heypayments.shared.domain.model.Money;
 import com.heypayments.shared.infra.audit.AuditService;
+import com.heypayments.shared.infra.id.UuidV7Generator;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -195,7 +195,8 @@ public class LedgerService {
             0L),
         null);
 
-    log.info("Posted journal entry id={} kind={} ref={}", entryId, command.kind(), command.reference());
+    log.info(
+        "Posted journal entry id={} kind={} ref={}", entryId, command.kind(), command.reference());
 
     return new JournalEntry(
         entryId, command.kind(), command.reference(), now, command.memo(), domainLines);

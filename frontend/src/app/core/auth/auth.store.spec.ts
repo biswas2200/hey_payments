@@ -137,7 +137,7 @@ describe('AuthStore', () => {
   });
 
   it('should login successfully and set activeDevice null when GET /devices/me returns null (204)', async () => {
-    devicesApiMock.devicesMeGet.mockReturnValue(of(null as any));
+    devicesApiMock.devicesMeGet.mockReturnValue(of(null as unknown as DeviceResponse));
 
     await store.login({ phone: '+919876543210', password: 'Password123!' });
     expect(store.isAuthenticated()).toBe(true);

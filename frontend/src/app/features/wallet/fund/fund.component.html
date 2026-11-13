@@ -13,27 +13,29 @@
     <div class="header-spacer"></div>
   </header>
 
-  <div *ngIf="successResponse(); else fundForm" class="success-card" role="alert">
-    <div class="success-icon" aria-hidden="true">
-      <svg lucideCheck [size]="32"></svg>
-    </div>
-    <h2 class="success-title">Money Added Successfully!</h2>
-    <p class="success-subtitle">Your wallet balance has been updated</p>
+  @if (successResponse()) {
+    <div class="success-card" role="alert">
+      <div class="success-icon" aria-hidden="true">
+        <svg lucideCheck [size]="32"></svg>
+      </div>
+      <h2 class="success-title">Money Added Successfully!</h2>
+      <p class="success-subtitle">Your wallet balance has been updated</p>
 
-    <div class="balance-summary">
-      <span class="lbl">New Main Balance</span>
-      <div class="balance-val">{{ walletStore.mainBalanceFormatted() }}</div>
-    </div>
+      <div class="balance-summary">
+        <span class="lbl">New Main Balance</span>
+        <div class="balance-val">{{ walletStore.mainBalanceFormatted() }}</div>
+      </div>
 
-    <button type="button" class="btn btn-primary" id="success-done-btn" (click)="onBack()">
-      Back to Wallet
-    </button>
-  </div>
-
-  <ng-template #fundForm>
-    <div *ngIf="walletStore.error()" class="error-alert" role="alert">
-      {{ walletStore.error() }}
+      <button type="button" class="btn btn-primary" id="success-done-btn" (click)="onBack()">
+        Back to Wallet
+      </button>
     </div>
+  } @else {
+    @if (walletStore.error()) {
+      <div class="error-alert" role="alert">
+        {{ walletStore.error() }}
+      </div>
+    }
 
     <!-- Current balance info -->
     <div class="curr-balance">
@@ -104,7 +106,12 @@
     <!-- Payment Source Selector -->
     <div class="source-card">
       <label for="source-select" class="lbl">Simulated Payment Method</label>
-      <select id="source-select" class="source-select" [value]="source()" (change)="onSourceChange($event)">
+      <select
+        id="source-select"
+        class="source-select"
+        [value]="source()"
+        (change)="onSourceChange($event)"
+      >
         <option value="SIM_BANK">UPI Simulator (Instant)</option>
         <option value="SIM_NETBANKING">NetBanking Simulator</option>
       </select>
@@ -118,8 +125,11 @@
       [disabled]="isSubmitting() || !isValidAmount()"
       (click)="onSubmit()"
     >
-      <span *ngIf="!isSubmitting()">Add ₹{{ amount() || 0 }} to Wallet</span>
-      <span *ngIf="isSubmitting()">Processing...</span>
+      @if (!isSubmitting()) {
+        <span>Add ₹{{ amount() || 0 }} to Wallet</span>
+      } @else {
+        <span>Processing...</span>
+      }
     </button>
-  </ng-template>
+  }
 </div>

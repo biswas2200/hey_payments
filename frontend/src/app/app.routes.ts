@@ -51,8 +51,7 @@ export const routes: Routes = [
   {
     path: 'pay',
     canActivate: [canActivateAuth],
-    loadComponent: () =>
-      import('./features/home/home.component').then((m) => m.HomeComponent),
+    loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
   },
   {
     path: 'wallet/fund',

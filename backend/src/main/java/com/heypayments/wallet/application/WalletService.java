@@ -75,7 +75,8 @@ public class WalletService {
     return walletRepository
         .findByUserId(userId)
         .map(this::toDomain)
-        .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "Wallet not found for user: " + userId));
+        .orElseThrow(
+            () -> new DomainException(ErrorCode.NOT_FOUND, "Wallet not found for user: " + userId));
   }
 
   @Transactional
@@ -102,7 +103,8 @@ public class WalletService {
   private WalletResponse doFundWallet(
       UUID userId, long amountPaise, String source, String idempotencyKey) {
     if (amountPaise <= 0L) {
-      throw new DomainException(ErrorCode.VALIDATION_FAILED, "Funding amount must be greater than 0");
+      throw new DomainException(
+          ErrorCode.VALIDATION_FAILED, "Funding amount must be greater than 0");
     }
 
     Wallet wallet = getOrCreateWallet(userId);

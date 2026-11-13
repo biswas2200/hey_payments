@@ -37,7 +37,8 @@ class WalletServiceTest extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("Payer registration event automatically provisions wallet and USER_MAIN ledger account")
+  @DisplayName(
+      "Payer registration event automatically provisions wallet and USER_MAIN ledger account")
   void shouldProvisionWalletOnPayerRegistrationEvent() {
     UUID userId = createRawUser();
     eventPublisher.publishEvent(new UserRegisteredEvent(userId, UserRole.PAYER, Instant.now()));

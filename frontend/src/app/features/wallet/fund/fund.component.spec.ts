@@ -8,7 +8,15 @@ import { signal } from '@angular/core';
 describe('FundComponent', () => {
   let component: FundComponent;
   let fixture: ComponentFixture<FundComponent>;
-  let walletStoreMock: any;
+  let walletStoreMock: {
+    wallet: ReturnType<typeof signal>;
+    mainBalance: ReturnType<typeof signal>;
+    mainBalanceFormatted: ReturnType<typeof signal>;
+    loading: ReturnType<typeof signal>;
+    error: ReturnType<typeof signal>;
+    fundWallet: ReturnType<typeof vi.fn>;
+    loadWallet: ReturnType<typeof vi.fn>;
+  };
   let routerMock: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {

@@ -24,7 +24,9 @@
 
   <!-- Connectivity Banner -->
   <div class="banner" [class.b-ok]="isOnline()" [class.b-off]="!isOnline()" role="status">
-    <svg *ngIf="!isOnline()" lucideWifiOff [size]="14" aria-hidden="true"></svg>
+    @if (!isOnline()) {
+      <svg lucideWifiOff [size]="14" aria-hidden="true"></svg>
+    }
     <span>{{ isOnline() ? 'Online · Balances synced' : 'Offline · Ready for offline pay' }}</span>
   </div>
 

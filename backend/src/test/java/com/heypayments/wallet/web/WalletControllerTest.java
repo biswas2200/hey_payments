@@ -1,6 +1,5 @@
 package com.heypayments.wallet.web;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -58,7 +57,8 @@ class WalletControllerTest extends BaseIntegrationTest {
   }
 
   @Test
-  @DisplayName("POST /api/v1/wallets/me/fund funds simulated money and returns 201 with updated balance")
+  @DisplayName(
+      "POST /api/v1/wallets/me/fund funds simulated money and returns 201 with updated balance")
   void shouldFundWalletViaSimulator() throws Exception {
     String token = registerAndLogin("+919876500051", "PAYER", "Wallet User 2");
     String key = UUID.randomUUID().toString();
@@ -97,11 +97,13 @@ class WalletControllerTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(differentReq)))
         .andExpect(status().isUnprocessableEntity())
-        .andExpect(jsonPath("$.type").value("https://heypayments.dev/errors/idempotency-key-reused"));
+        .andExpect(
+            jsonPath("$.type").value("https://heypayments.dev/errors/idempotency-key-reused"));
   }
 
   @Test
-  @DisplayName("POST /api/v1/wallets/me/fund returns 422 LIMIT_EXCEEDED when daily cap of ₹50,000 is exceeded")
+  @DisplayName(
+      "POST /api/v1/wallets/me/fund returns 422 LIMIT_EXCEEDED when daily cap of ₹50,000 is exceeded")
   void shouldRejectFundingWhenDailyLimitExceeded() throws Exception {
     String token = registerAndLogin("+919876500052", "PAYER", "Wallet User 3");
 
@@ -121,7 +123,8 @@ class WalletControllerTest extends BaseIntegrationTest {
 
   private String registerAndLogin(String phone, String role, String displayName) {
     authService.register(
-        new RegisterRequest(phone, "user" + UUID.randomUUID() + "@example.com", "Password123!", role, displayName));
+        new RegisterRequest(
+            phone, "user" + UUID.randomUUID() + "@example.com", "Password123!", role, displayName));
     String otp = otpService.getRecentOtpForPhone(phone);
     authService.verifyOtp(phone, otp);
     var loginResult = authService.login(new LoginRequest(phone, "Password123!"));
