@@ -8,6 +8,7 @@ import { DevicesService } from '../api/generated/services/devices.service';
 import { KeyService } from '../crypto/key.service';
 import { TokenRefreshService } from './token-refresh.service';
 import { TokenStore } from './token.store';
+import { db } from '../offline/db';
 import type { DeviceResponse, TokenResponse, UserProfile } from '../api/models';
 
 describe('AuthStore', () => {
@@ -239,6 +240,49 @@ describe('AuthStore', () => {
 
     await expect(store.setPin('000000', 'Password123!')).rejects.toBeDefined();
     expect(store.error()).toBe('Weak PIN');
+  });
+
+  it('should store PIN hash and salt in Dexie meta instead of localStorage', async () => {
+    localStorage.clear();
+    await db.meta.clear();
+
+    await store.setPin('123456', 'Password123!');
+    expect(localStorage.getItem('hp_pin_hash')).toBeNull();
+    expect(localStorage.getItem('hp_pin_salt')).toBeNull();
+
+    const storedHash = await db.meta.get('pin_hash');
+    const storedSalt = await db.meta.get('pin_salt');
+    expect(storedHash?.value).toBeDefined();
+    expect(storedSalt?.value).toBeDefined();
+  });
+
+  it('should verify PIN correctly, increment failed attempts on failure, and lockout for 30 minutes after 5 strikes', async () => {
+    await db.meta.clear();
+    await store.setPin('123456', 'Password123!');
+
+    // Correct PIN succeeds
+    const ok = await store.verifyPin('123456');
+    expect(ok).toBe(true);
+
+    // Incorrect attempts 1 through 4
+    for (let i = 1; i <= 4; i++) {
+      await expect(store.verifyPin('999999')).rejects.toThrow(
+        new RegExp(`${5 - i} attempt\\(s\\) remaining`),
+      );
+      const attempts = await db.meta.get('pin_failed_attempts');
+      expect(attempts?.value).toBe(i);
+    }
+
+    // 5th strike triggers 30-minute lockout
+    await expect(store.verifyPin('999999')).rejects.toThrow(/locked for 30 minutes/i);
+    const lockout = await db.meta.get('pin_lockout_until');
+    expect(typeof lockout?.value).toBe('number');
+    expect((lockout?.value as number) > Date.now()).toBe(true);
+
+    // Subsequent attempt while locked out is rejected even with correct PIN
+    await expect(store.verifyPin('123456')).rejects.toThrow(
+      /locked due to excessive failed attempts/i,
+    );
   });
 
   it('should clear tokens and user session on logout while preserving device keys', async () => {
