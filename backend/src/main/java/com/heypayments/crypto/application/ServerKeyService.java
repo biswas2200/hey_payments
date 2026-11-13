@@ -80,7 +80,7 @@ public class ServerKeyService {
     return generateAndSaveKey(purpose, ServerKeyStatus.ACTIVE);
   }
 
-  @Scheduled(cron = "${app.crypto.key-rotation-cron:0 0 0 * * ?}")
+  @Scheduled(cron = "${hp.crypto.server-key.rotation-cron:0 0 2 * * ?}")
   @Transactional
   public synchronized void scheduledKeyRotation() {
     Instant now = clock.instant();

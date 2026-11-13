@@ -44,3 +44,6 @@ management:
 
 hp:
   master-key: ${HP_MASTER_KEY:dev-master-key-seed-32-bytes-long!}
+  crypto:
+    server-key:
+      rotation-cron: ${HP_SERVER_KEY_ROTATION_CRON:0 0 2 * * ?}
