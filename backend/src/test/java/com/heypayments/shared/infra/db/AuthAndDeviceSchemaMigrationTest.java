@@ -24,6 +24,7 @@ class AuthAndDeviceSchemaMigrationTest extends BaseIntegrationTest {
     jdbcTemplate.execute("DELETE FROM devices");
     jdbcTemplate.execute("DELETE FROM merchants");
     jdbcTemplate.execute("DELETE FROM refresh_tokens");
+    jdbcTemplate.execute("DELETE FROM wallets");
     jdbcTemplate.execute("DELETE FROM users");
   }
 

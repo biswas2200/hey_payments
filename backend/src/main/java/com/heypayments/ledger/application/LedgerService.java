@@ -190,7 +190,9 @@ public class LedgerService {
             "memo",
             command.memo() != null ? command.memo() : "",
             "lineCount",
-            lines.size()),
+            lines.size(),
+            "sum",
+            0L),
         null);
 
     log.info("Posted journal entry id={} kind={} ref={}", entryId, command.kind(), command.reference());
