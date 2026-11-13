@@ -29,7 +29,11 @@ export class DeviceRegisterComponent {
     this.formError.set(null);
     try {
       await this.auth.registerCurrentDevice(lbl);
-      await this.router.navigate(['/auth/set-pin']);
+      if (this.auth.isMerchant()) {
+        await this.router.navigate(['/merchant']);
+      } else {
+        await this.router.navigate(['/auth/set-pin']);
+      }
     } catch {
       // Handled by AuthStore error signal
     }

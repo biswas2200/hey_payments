@@ -70,7 +70,13 @@ public class AuthService {
           displayName.toLowerCase().replaceAll("[^a-z0-9]", ".").replaceAll("\\.+", ".");
       String handle = baseHandle + "@hey";
       if (merchantService.existsByHandle(handle)) {
-        handle = baseHandle + "." + userId.toString().substring(0, 4) + "@hey";
+        String suffix = userId.toString().replace("-", "").substring(24);
+        handle = baseHandle + "." + suffix + "@hey";
+        int counter = 1;
+        while (merchantService.existsByHandle(handle)) {
+          handle = baseHandle + "." + suffix + counter + "@hey";
+          counter++;
+        }
       }
 
       merchantService.createMerchant(userId, displayName, handle, "GENERAL", 1_000_000L);
