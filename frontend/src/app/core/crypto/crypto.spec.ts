@@ -12,6 +12,7 @@ import {
   verifyEnvelope,
   sha256Hex,
   derivePinHash,
+  DEFAULT_PBKDF2_ITERATIONS,
 } from './crypto';
 
 interface JcsVector {
@@ -253,13 +254,17 @@ describe('Frontend Crypto & Shared Test Vectors', () => {
 
     it('should derive deterministic 256-bit PBKDF2 hash for offline PIN gating', async () => {
       const salt = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-      const hash1 = await derivePinHash('123456', salt);
-      const hash2 = await derivePinHash('123456', salt);
-      const differentHash = await derivePinHash('654321', salt);
+      const hash1 = await derivePinHash('123456', salt, 1000);
+      const hash2 = await derivePinHash('123456', salt, 1000);
+      const differentHash = await derivePinHash('654321', salt, 1000);
 
       expect(hash1).toBe(hash2);
       expect(hash1).toMatch(/^[0-9a-f]{64}$/);
       expect(hash1).not.toBe(differentHash);
+    }, 15000);
+
+    it('should default to 600,000 PBKDF2 iterations for production security', () => {
+      expect(DEFAULT_PBKDF2_ITERATIONS).toBe(600_000);
     });
   });
 });

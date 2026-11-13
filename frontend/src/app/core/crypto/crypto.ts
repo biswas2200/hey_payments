@@ -174,11 +174,17 @@ export async function sha256Hex(data: Uint8Array | string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+export const DEFAULT_PBKDF2_ITERATIONS = 600_000;
+
 /**
- * Derives a 256-bit PBKDF2 hash using HMAC-SHA-256 and 600,000 iterations
- * for local offline PIN gating per docs/08-security-threat-model.md §4.
+ * Derives a 256-bit PBKDF2 hash using HMAC-SHA-256 and configurable iterations
+ * (defaulting to 600,000 for production per docs/08-security-threat-model.md §4).
  */
-export async function derivePinHash(pin: string, salt: Uint8Array): Promise<string> {
+export async function derivePinHash(
+  pin: string,
+  salt: Uint8Array,
+  iterations: number = DEFAULT_PBKDF2_ITERATIONS,
+): Promise<string> {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -191,7 +197,7 @@ export async function derivePinHash(pin: string, salt: Uint8Array): Promise<stri
     {
       name: 'PBKDF2',
       salt: salt as unknown as BufferSource,
-      iterations: 600000,
+      iterations,
       hash: 'SHA-256',
     },
     keyMaterial,
