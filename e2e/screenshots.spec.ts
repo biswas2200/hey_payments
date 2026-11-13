@@ -108,6 +108,28 @@ test.describe('Auth Screens Visual Capture', () => {
         path: path.join(screenshotsDir, `phase-1-set-pin-${theme}.png`),
         fullPage: true,
       });
+
+      await page.fill('input#new-pin', '123456');
+      await page.fill('input#confirm-pin', '123456');
+      await page.fill('input#current-password', password);
+      await page.click('button[type="submit"]');
+
+      // 6. Payer Home Screen
+      await page.waitForURL((url) => url.pathname === '/pay');
+      await applyTheme();
+      await page.screenshot({
+        path: path.join(screenshotsDir, `phase-2-payer-home-${theme}.png`),
+        fullPage: true,
+      });
+
+      // 7. Add Money Screen
+      await page.click('#add-money-btn');
+      await page.waitForURL((url) => url.pathname === '/wallet/fund');
+      await applyTheme();
+      await page.screenshot({
+        path: path.join(screenshotsDir, `phase-2-wallet-fund-${theme}.png`),
+        fullPage: true,
+      });
     });
   }
 });
