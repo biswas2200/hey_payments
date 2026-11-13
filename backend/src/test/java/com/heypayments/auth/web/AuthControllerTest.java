@@ -105,6 +105,7 @@ class AuthControllerTest extends BaseIntegrationTest {
     String accessToken = objectMapper.readTree(responseBody).get("accessToken").asText();
     Cookie refreshCookie = loginResult.getResponse().getCookie("hp_rt");
     assertThat(refreshCookie).isNotNull();
+    assertThat(refreshCookie.getPath()).isEqualTo("/api/v1/auth");
 
     // 5. GET /users/me
     mockMvc
@@ -227,5 +228,65 @@ class AuthControllerTest extends BaseIntegrationTest {
     mockMvc
         .perform(post("/api/v1/auth/refresh").cookie(token2))
         .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @DisplayName("Refresh endpoint should enforce Origin/Referer check to protect against CSRF")
+  void shouldRejectRefreshWithUntrustedOriginAndAcceptTrustedOrigin() throws Exception {
+    String phone = "+919876543888";
+    String password = "Password123!";
+
+    mockMvc
+        .perform(
+            post("/api/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        new RegisterRequest(phone, "csrf@example.com", password, "PAYER", null))))
+        .andExpect(status().isCreated());
+
+    String otp = otpService.getRecentOtpForPhone(phone);
+    mockMvc
+        .perform(
+            post("/api/v1/auth/verify-otp")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new VerifyOtpRequest(phone, otp))))
+        .andExpect(status().isOk());
+
+    MvcResult loginResult =
+        mockMvc
+            .perform(
+                post("/api/v1/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(new LoginRequest(phone, password))))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    Cookie refreshCookie = loginResult.getResponse().getCookie("hp_rt");
+    assertThat(refreshCookie).isNotNull();
+
+    // Untrusted Origin must be rejected with 403 Forbidden
+    mockMvc
+        .perform(
+            post("/api/v1/auth/refresh")
+                .cookie(refreshCookie)
+                .header("Origin", "https://attacker.evil.com"))
+        .andExpect(status().isForbidden());
+
+    // Untrusted Referer must be rejected with 403 Forbidden
+    mockMvc
+        .perform(
+            post("/api/v1/auth/refresh")
+                .cookie(refreshCookie)
+                .header("Referer", "https://attacker.evil.com/phishing"))
+        .andExpect(status().isForbidden());
+
+    // Trusted Origin matching localhost must succeed
+    mockMvc
+        .perform(
+            post("/api/v1/auth/refresh")
+                .cookie(refreshCookie)
+                .header("Origin", "http://localhost:8080"))
+        .andExpect(status().isOk());
   }
 }
